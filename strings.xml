@@ -36,7 +36,7 @@
     <string name="not_connected">Нет соединения</string>
     <string name="preferences_button_text">Настройка</string>
     <string name="fps_button_text">YouTube WEG™</string>
-    <string name="help_button_text">Группа WEG™ в Телеграм</string>
+    <string name="help_button_text">WEG™ group in Telegram</string>
     <string name="exit_button_text">Выход</string>
     <string name="extra_keys_config_desc">Здесь вы можете установить значение переменной дополнительных клавиш, как в приложении Termux app (<a href="http://wiki.termux.com/wiki/Touch_Keyboard#Extra_Keys_Row">this</a>) и многое другое (e.g. META).
     Введите пустую строку в качестве значения по умолчанию.</string>
