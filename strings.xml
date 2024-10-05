@@ -1,52 +1,549 @@
-<!DOCTYPE resources [
-    <!ENTITY TERMUX_PACKAGE_NAME "com.termux">
-    <!ENTITY TERMUX_APP_NAME "Termux">
-    <!ENTITY TERMUX_X11_APP_NAME "WEG™:X11⚡️Mod">
-    ]>
-<resources>
-    <string name="app_name">&TERMUX_X11_APP_NAME;</string>
-    <string name="plugin_info">&TERMUX_X11_APP_NAME; is a plugin app for the &TERMUX_APP_NAME; app.
-        \n\nCheck &TERMUX_APP_NAME; app github %1$s and &TERMUX_X11_APP_NAME; app github %2$s for more info.</string>
+#!/bin/bash
+echo ЗАГРУЗКА....
 
-    <!-- TermuxX11Activity -->
-    <string name="msg_storage_permission_not_granted_warning">The storage permission must be granted
-        to &TERMUX_X11_APP_NAME; app to...</string>
-    <string name="action_grant_storage_permission">Grant Storage Permission</string>
+export CONFIG_SETTINGS_GAME=speed.lnk
 
-    <string name="msg_battery_optimization_not_disabled_warning">Android battery optimizations
-        should be disabled for the &TERMUX_X11_APP_NAME; app so that…
-        Check https://developer.android.com/about/versions/oreo/background for more info and
-        https://developer.android.com/guide/components/foreground-services#background-start-restrictions
-        for more info.
+pulseaudio --start --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" --exit-idle-time=-1
+termux-x11 :0 &>/dev/null &
+export PULSE_SERVER=127.0.0.1
+export DISPLAY=:0
 
-        \n\nAlso check https://dontkillmyapp.com for info on vendor specific app killers.
-        Depending on vendor you may need to do things like enable AutoStart, disable DuraSpeed,
-        enable `Display pop-up windows while running in the background` for the app.</string>
-    <string name="action_disable_battery_optimizations">Disable Battery Optimizations</string>
 
-    <string name="msg_display_over_other_apps_permission_not_granted_warning">The display over other
-        apps permission should be granted to &TERMUX_X11_APP_NAME; app for starting foreground
-        activities from background. Check https://developer.android.com/guide/components/activities/background-starts
-        for more info.
-    </string>
-    <string name="action_grant_display_over_other_apps_permission">Grant Draw Over Apps Permission</string>
+# путь к исполняемому файлу
+export ORIGINAL_FILE=$HOME/Desktop/$CONFIG_SETTINGS_GAME
+. $PREFIX/mobox/set_game/$CONFIG_SETTINGS_GAME &>/dev/null
 
-    <string name="action_already_granted">Подключено</string>
-    <string name="action_already_disabled">Отключено</string>
-    <string name="not_connected">Нет соединения</string>
-    <string name="preferences_button_text">Настройка</string>
-    <string name="fps_button_text">YouTube WEG™</string>
-    <string name="help_button_text">WEG™ group in Telegram</string>
-    <string name="exit_button_text">Выход</string>
-    <string name="extra_keys_config_desc">Здесь вы можете установить значение переменной дополнительных клавиш, как в приложении Termux app (<a href="http://wiki.termux.com/wiki/Touch_Keyboard#Extra_Keys_Row">this</a>) и многое другое (e.g. META).
-    Введите пустую строку в качестве значения по умолчанию.</string>
+file_path="$PREFIX/glibc/opt/scripts/mobox_menu"
+    value=$(grep 'Mobox' "$file_path" | sed -E 's/.*Mobox([^"]*).*/\1/')
+    
+    if [ "$BOX_VERS" == "X86" ]; then
+    
+if [ -n "$value" ]; then
+if [ -d "$PREFIX/glibc-x86" ]; then
+                    mv $PREFIX/glibc $PREFIX/glibc-wow64 || { echo "Ошибка при переименовании glibc"; exit 1; }
+                    mv $PREFIX/glibc-x86 $PREFIX/glibc || { echo "Ошибка при переименовании glibc-x86"; exit 1; }
+                    else 
+                    echo "Mobox x86 не установлен"
+                    exit 1
+                fi
+                fi
+am start --user 0 -n com.termux.x11/.MainActivity &>/dev/null
+sleep 1
+am start --user 0 -n com.termux.x11/.MainActivity &>/dev/null
+# авто создание ярлыков
+. $PREFIX/mobox/link-kreator $HOME 2>&1 &
 
-    <!-- Log Level -->
-    <string name="log_level_title">Уровень журнала</string>
-    <string name="log_level_off">Выключенный</string>
-    <string name="log_level_normal">Нормально</string>
-    <string name="log_level_debug">Отладка</string>
-    <string name="log_level_verbose">Подробно</string>
-    <string name="log_level_unknown">*Неизвестный*</string>
-    <string name="log_level_value">Уровень журнала Logcat установлен на \"%1$s\"</string>
-</resources>
+cd
+mkdir -p /sdcard/Android/data/com.termux/files/Download
+mkdir -p /sdcard/moboxtrace
+#загружает дэфолтный конфиг 
+
+#загружает настройки mobox
+. $PREFIX/mobox/configs &>/dev/null
+. $PREFIX/glibc/opt/conf/path.conf &>/dev/null
+. $PREFIX/glibc/opt/conf/cores.conf &>/dev/null
+. $PREFIX/glibc/opt/conf/force_compatibility.conf &>/dev/null
+. $PREFIX/glibc/opt/scripts/configs &>/dev/null
+. $PREFIX/mobox/cleaner_links &>/dev/null
+source "$PREFIX/mobox/set_game/$CONFIG_SETTINGS_GAME" &>/dev/null
+load_configs
+# Проверяем и очищаем директории
+cleanup_directory "$HOME/.shortcuts" &>/dev/null
+cleanup_directory "$PREFIX/mobox/set_game" &>/dev/null
+cleanup_directory "$PREFIX/mobox/game_settings" &>/dev/null
+
+
+
+function stop-all {
+	pkill -f "app_process / com.termux.x11"
+	rm -rf $PREFIX/tmp/pulse-*
+	pulseaudio -k &>/dev/null
+	unset PULSE_SERVER
+	pkill pulseaudio
+	rm -rf $PREFIX/tmp/.virgl_test &>/dev/null
+	pkill virgl
+	rm -rf $PREFIX/tmp/.virgl_test &>/dev/null
+}
+stop-all
+if [ -e $PREFIX/glibc/opt/virgl/virgl-enabled ]; then
+	chmod +x $PREFIX/glibc/opt/virgl/libvirgl_test_server.so
+	TMPDIR=$PREFIX/tmp $PREFIX/glibc/opt/virgl/libvirgl_test_server.so &>/dev/null &
+fi
+pulseaudio --start --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" --exit-idle-time=-1
+termux-x11 :0 &>/dev/null &
+sleep 1
+if [ -e $PREFIX/glibc/opt/virgl/virgl-enabled ]; then
+	chmod 777 $PREFIX/tmp/.virgl_test
+fi
+export RESOLUTION=1280x1024
+if [ "$STARTUP_COMPATIBILITY_MODE" = "1" ]; then
+	autores=""
+else
+	autores=$(DISPLAY=:0 xrandr | grep current | awk '{print $8$9$10}' | tr -d ,)
+fi
+if [ ! "$autores" = "1280x1024" ] && [ ! "$autores" = "" ]; then
+	export RESOLUTION=$autores
+	echo "$autores">$PREFIX/glibc/opt/last-resolution.conf
+elif [ -e $PREFIX/glibc/opt/last-resolution.conf ]; then
+	export RESOLUTION=$(cat $PREFIX/glibc/opt/last-resolution.conf)
+fi
+
+# Установка переменных окружения для PulseAudio и X11
+export PULSE_SERVER=127.0.0.1
+export DISPLAY=:0
+
+# Проверка, существует ли файл 86.jpg
+if [ -f "$HOME/86.jpg" ]; then
+# Запуск feh для просмотра изображения с заданным разрешением
+feh -Z -F "$HOME/86.jpg"
+else
+echo "Файл 86.jpg не найден в директории $HOME."
+fi &>/dev/null &
+
+
+    # Если box64 успешно распакован, выполняем chmod +x
+chmod +x "$PREFIX/glibc/bin/box64"
+chmod +x "$PREFIX/glibc/bin/box86"
+
+# Настройка прав для wine и wineserver
+chmod +x "$WINE_PATH/bin/wine" "$WINE_PATH/bin/wineserver"
+
+# Установка rpath и интерпретатора для box64
+patchelf --force-rpath --set-rpath "$PREFIX/glibc/lib" --set-interpreter "$PREFIX/glibc/lib/ld-linux-aarch64.so.1" "$PREFIX/glibc/bin/box64"
+
+# Удаление старых ссылок и создание новых
+rm -rf "$PREFIX/glibc/bin/wine" "$PREFIX/glibc/bin/wineserver"
+ln -sf "$WINE_PATH/bin/wine" "$PREFIX/glibc/bin/wine"
+ln -sf "$WINE_PATH/bin/wineserver" "$PREFIX/glibc/bin/wineserver"
+
+export GLIBC_BIN="$PREFIX/glibc/bin"
+unset LD_PRELOAD
+# первичная установка (вырезано)
+
+
+
+
+
+
+
+
+
+
+
+load_configs
+source "$PREFIX/mobox/set_game/$CONFIG_SETTINGS_GAME" &>/dev/null
+
+
+sleep 3
+ln -sf $(df -H | grep -o "/storage/....-....") "$WINEPREFIX/dosdevices/f:" &>/dev/null
+
+taskset -c $SECONDARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine64 start /min /unix $PREFIX/glibc/bin/ib.exe &>/dev/null &
+DISPLAY=:0 taskset -c $SECONDARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine64 start /min /unix $PREFIX/glibc/opt/apps/f5taskmgr.exe &>/dev/null &&
+if [ "$STARTUP_WINEDEVICE_MODE" = "0" ]; then
+        $GLIBC_BIN/box64 $GLIBC_BIN/wine taskkill /f /im services.exe &>/dev/null &
+fi
+
+
+DISPLAY=:0 LC_ALL=$(cat $PREFIX/glibc/opt/locale.conf) taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine64 start /min /unix $ORIGINAL_FILE >$LOG_PATH 2>&1 &&
+
+
+echo "Нажмите 1 для завершения"
+echo "$BOX64_DYNAREC_BIGBLOCK"
+echo "$BOX86_DYNAREC_BIGBLOCK x86 $BOX64_DYNAREC_X87DOUBLE"
+sleep 2
+pkill feh &>/dev/null &
+
+
+
+
+
+REBOOT=0
+while true; do
+if [ -e $PREFIX/glibc/opt/shutdown ]; then
+	rm -rf $PREFIX/glibc/opt/shutdown
+	$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
+	break
+fi
+if [ -e $PREFIX/glibc/opt/reboot ]; then
+	rm -rf $PREFIX/glibc/opt/reboot
+	$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
+	REBOOT=1
+	break
+fi
+read -t 3 i
+case "$i" in
+1)
+	$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
+	break
+;;
+esac
+
+
+
+done
+
+export LD_PRELOAD=/data/data/com.termux/files/usr/lib/libtermux-exec.so
+stop-all
+
+if [ "$REBOOT" = "1" ]; then
+	exec $0
+fi
+    
+
+
+
+
+elif [ "$BOX_VERS" == "WOW64" ]; then
+
+
+# Загрузка WoW64
+
+
+
+if [ -n "$value" ]; then
+echo
+        else
+        if [ -d "$PREFIX/glibc-wow64" ]; then
+                    mv $PREFIX/glibc $PREFIX/glibc-x86 || { echo "Ошибка при переименовании glibc"; exit 1; }
+                    mv $PREFIX/glibc-wow64 $PREFIX/glibc || { echo "Ошибка при переименовании glibc-wow64"; exit 1; }
+                    else 
+                    echo "Mobox WoW64 не установлен"
+                    exit 1
+                fi
+                fi
+am start --user 0 -n com.termux.x11/.MainActivity &>/dev/null
+sleep 1
+am start --user 0 -n com.termux.x11/.MainActivity &>/dev/null 
+
+# авто создание ярлыков
+. $PREFIX/mobox/link-kreator $HOME 2>&1 &
+
+
+cd
+mkdir -p /sdcard/Android/data/com.termux/files/Download
+mkdir -p /sdcard/moboxtrace
+#загружает дэфолтный конфиг 
+. $PREFIX/mobox/set_game/$CONFIG_SETTINGS_GAME &>/dev/null
+
+#загружает настройки mobox
+. $PREFIX/mobox/configs
+. $PREFIX/glibc/opt/conf/path.conf &>/dev/null
+. $PREFIX/glibc/opt/conf/cores.conf &>/dev/null
+. $PREFIX/glibc/opt/conf/force_compatibility.conf &>/dev/null
+. $PREFIX/glibc/opt/scripts/configs &>/dev/null
+. $PREFIX/mobox/cleaner_links &>/dev/null
+
+load_configs
+
+
+# Установка (turnip, dxvk, box64-86)
+# Подключаем настройки игры
+source "$PREFIX/mobox/set_game/$CONFIG_SETTINGS_GAME" &>/dev/null
+CORES_CONFIG_FILE=$PREFIX/glibc/opt/conf/cores.conf
+DXVK_CONFIG_FILE=$PREFIX/glibc/opt/dxvk.conf
+# Переименование переменных
+export BOX64_DYNAREC_ALIGNED_ATOMICS=$BOX64_DYNAREC_ALIGNED_ATOMICS_WOW
+export BOX64_DYNAREC_BIGBLOCK=$BOX64_DYNAREC_BIGBLOCK_WOW
+export BOX64_DYNAREC_FASTMAN=$BOX64_DYNAREC_FASTMAN_WOW
+export BOX64_DYNAREC_SAFEFLAGS=$BOX64_DYNAREC_SAFEFLAGS_WOW
+export BOX64_DYNAREC_STRONGMEM=$BOX64_DYNAREC_STRONGMEM_WOW
+export BOX64_DYNAREC_WAIT=$BOX64_DYNAREC_WAIT_WOW
+export BOX64_DYNAREC_X87DOUBLE=$BOX64_DYNAREC_X87DOUBLE_WOW
+export BOX64_DYNAREC_CALLRET=$BOX64_DYNAREC_CALLRET_WOW
+export BOX64_DYNAREC_FASTROUND=$BOX64_DYNAREC_FASTROUND_WOW
+export BOX64_IGNOREINT3=$BOX64_IGNOREINT3_WOW
+export RESOLUTION=$RESOLUTION_WOW
+
+
+
+
+function stop-all {
+	pkill -f "app_process / com.termux.x11"
+	rm -rf $PREFIX/tmp/pulse-*
+	pulseaudio -k &>/dev/null
+	unset PULSE_SERVER
+	pkill pulseaudio
+	rm -rf $PREFIX/tmp/.virgl_test &>/dev/null
+	pkill virgl
+	rm -rf $PREFIX/tmp/.virgl_test &>/dev/null
+}
+stop-all 
+if [ -e $PREFIX/glibc/opt/virgl/virgl-enabled ]; then
+	chmod +x $PREFIX/glibc/opt/virgl/libvirgl_test_server.so
+	TMPDIR=$PREFIX/tmp $PREFIX/glibc/opt/virgl/libvirgl_test_server.so &>/dev/null &
+fi
+pulseaudio --start --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" --exit-idle-time=-1
+termux-x11 :0 &>/dev/null &
+sleep 1
+if [ -e $PREFIX/glibc/opt/virgl/virgl-enabled ]; then
+	chmod 777 $PREFIX/tmp/.virgl_test
+fi
+export RESOLUTION=1280x1024
+if [ "$STARTUP_COMPATIBILITY_MODE" = "1" ]; then
+	autores=""
+else
+	autores=$(DISPLAY=:0 xrandr | grep current | awk '{print $8$9$10}' | tr -d ,)
+fi
+if [ ! "$autores" = "1280x1024" ] && [ ! "$autores" = "" ]; then
+	export RESOLUTION=$autores
+	echo "$autores">$PREFIX/glibc/opt/last-resolution.conf
+elif [ -e $PREFIX/glibc/opt/last-resolution.conf ]; then
+	export RESOLUTION=$(cat $PREFIX/glibc/opt/last-resolution.conf)
+fi
+
+
+# Проверка, существует ли файл game86.jpg
+if [ -f "$HOME/game64.jpg" ]; then
+# Запуск feh для просмотра изображения с заданным разрешением
+feh -Z -F "$HOME/game64.jpg"
+else
+echo "Файл game64.jpg не найден в директории $HOME."
+fi &>/dev/null &
+
+if [ "$FPS_LIM_WOW" ]; then
+    sed -i "4s/.*/dxgi.maxFrameRate = \"$FPS_LIM_WOW\"/" "$DXVK_CONFIG_FILE"
+    sed -i "5s/.*/d3d9.maxFrameRate = \"$FPS_LIM_WOW\"/" "$DXVK_CONFIG_FILE"
+fi
+
+if [ "$DX_VER_WOW" ]; then
+    sed -i "3s/.*/d3d11.maxFeatureLevel = \"$DX_VER_WOW\"/" "$DXVK_CONFIG_FILE"
+    
+fi
+if [ "$CORES_WOW" ]; then
+    sed -i "1s/.*/export PRIMARY_CORES=\"$PRIMARY_WOW\"/" "$CORES_CONFIG_FILE"
+    sed -i "2s/.*/export SECONDARY_CORES=\"$SECONDARY_WOW\"/" "$CORES_CONFIG_FILE"
+fi
+
+# Путь к папке драйверов
+DRIVERS_DIR="$PREFIX/mobox/drivers"
+
+# Замените на реальное имя файла
+DXVK_FILE="$DRIVERS_DIR/dxvk$DXVK_WOW.zip"
+TURNIP_FILE="$DRIVERS_DIR/turnip$TURNIP_WOW.zip"
+BOX64_FILE="$DRIVERS_DIR/box$BOX64_86.zip"
+
+# Проверяем наличие dxvk-файла
+if [ -e "$DXVK_FILE" ]; then
+    # Подключаем конфигурацию
+    source "$PREFIX/glibc/opt/conf/wine_path.conf" &>/dev/null
+    
+    # Распаковываем dxvk-файл в нужную директорию
+    unzip -o "$DXVK_FILE" -d "$WINE_PATH/.wine/drive_c"
+else
+    echo "Файл $DXVK_FILE не найден."
+fi
+
+# Проверяем наличие turnip-файла
+if [ -e "$TURNIP_FILE" ]; then
+    # Распаковываем turnip-файл в нужную директорию
+    unzip -o "$TURNIP_FILE" -d "$PREFIX/glibc"
+else
+    echo "Файл $TURNIP_FILE не найден."
+fi
+
+chmod +x $PREFIX/glibc/bin/box64
+chmod +x $WINE_PATH/bin/{wine,wineserver}
+patchelf --force-rpath --set-rpath $PREFIX/glibc/lib --set-interpreter $PREFIX/glibc/lib/ld-linux-aarch64.so.1 $PREFIX/glibc/bin/box64
+rm -rf $PREFIX/glibc/bin/{wine,wineserver}
+ln -sf $WINE_PATH/bin/wine $PREFIX/glibc/bin/wine
+ln -sf $WINE_PATH/bin/wineserver $PREFIX/glibc/bin/wineserver
+
+export GLIBC_BIN=$PREFIX/glibc/bin
+unset LD_PRELOAD
+
+if [ ! -e $WINEPREFIX/.update-timestamp ]; then
+	echo "Configuring $WINEPREFIX. This may take a few minutes"
+	rm -rf $WINEPREFIX
+	unset BOX64_DYNAREC_BIGBLOCK
+	unset WINEESYNC
+	unset WINEESYNC_TERMUX
+	unset BOX64_DYNAREC_CALLRET
+	if [ -e $WINE_PATH/lib/wine/i386-windows/shell32-bak.dll ] || [ -e $WINE_PATH/lib64/wine/x86_64-windows/shell32-bak.dll ]; then
+		mv $WINE_PATH/lib/wine/i386-windows/shell32-bak.dll $WINE_PATH/lib/wine/i386-windows/shell32.dll &>/dev/null
+		mv $WINE_PATH/lib/wine/x86_64-windows/shell32-bak.dll $WINE_PATH/lib/wine/x86_64-windows/shell32.dll &>/dev/null
+		mv $WINE_PATH/lib64/wine/x86_64-windows/shell32-bak.dll $WINE_PATH/lib64/wine/x86_64-windows/shell32.dll &>/dev/null
+		mv $WINE_PATH/lib64/wine/i386-windows/shell32-bak.dll $WINE_PATH/lib64/wine/i386-windows/shell32.dll &>/dev/null
+	fi
+
+	WINEDLLOVERRIDES="winegstreamer=disabled,mscoree=disabled" taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine wineboot -u >${LOG_PATH}_wineboot.txt 2>&1
+	## DISPLAY=:0 $GLIBC_BIN/box64 $GLIBC_BIN/wine explorer /desktop=shell,$RESOLUTION winecfg
+	if [ ! -e $WINEPREFIX/.update-timestamp ]; then
+		echo "Cannot configure. See ${LOG_PATH}_wineboot.txt"
+		$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
+		export LD_PRELOAD=/data/data/com.termux/files/usr/lib/libtermux-exec.so
+		rm -rf $PREFIX/tmp/pulse-*
+		pulseaudio -k &>/dev/null
+		pkill -f pulseaudio
+		pkill -f "app_process / com.termux.x11"
+		sleep 5
+		exit
+	fi
+
+	echo "disable">$WINEPREFIX/.update-timestamp
+	7z x $PREFIX/glibc/opt/prefix/drive_c.7z -o$WINEPREFIX/drive_c -y &>/dev/null
+	echo "Installing DirectX"
+	7z x $PREFIX/glibc/opt/prefix/directx.7z -o$WINEPREFIX/drive_c -y &>/dev/null
+	echo "Installing Start Menu shortcuts"
+	cp -r $PREFIX/glibc/opt/prefix/start/* "$WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start Menu"
+	rm -rf "$WINEPREFIX/dosdevices/z:"
+	ln -sf /data/data/com.termux/files "$WINEPREFIX/dosdevices/z:"
+	ln -sf /sdcard/Download "$WINEPREFIX/dosdevices/d:"
+	ln -sf /sdcard/Android/data/com.termux/files/Download "$WINEPREFIX/dosdevices/e:"
+	echo "Installing registry tweaks"
+	cp $PREFIX/glibc/opt/prefix/marlett.ttf $WINEPREFIX/drive_c/windows/Fonts
+	taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine regedit $PREFIX/glibc/opt/prefix/user.reg &>/dev/null
+	taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine regedit $PREFIX/glibc/opt/prefix/system.reg &>/dev/null
+	mkdir -p "$WINEPREFIX/moboxmeta"
+	taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine regedit $PREFIX/glibc/opt/prefix/fix-services.reg &>/dev/null
+	touch $WINEPREFIX/moboxmeta/services-fix-applied
+	tar -xf $PREFIX/glibc/opt/prefix/fix-fonts.tar.xz -C $WINEPREFIX/drive_c/windows
+	touch $WINEPREFIX/moboxmeta/fonts-fix-applied
+	touch $WINEPREFIX/moboxmeta/dxdlls-fix-applied
+
+	if [ ! "$STARTUP_COMPATIBILITY_MODE" = "1" ]; then
+		echo "Installing PhysX 9.10, 7-Zip, Visual C++ Redistributable"
+		DISPLAY=:0 taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine explorer /desktop=shell,640x480 cmd /c "start Z:\\usr\\glibc\\opt\\apps\\install.bat" >${LOG_PATH}_redist.txt 2>&1
+		if [ ! -e $PREFIX/glibc/opt/virgl/virgl-enabled ]; then
+			sleep 1
+			echo "Installing dxvk-async-1.10.3"
+		DISPLAY=:0 taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine explorer /desktop=shell,640x480 cmd /c "cd Z:\\usr\\glibc\\opt\\prefix\\d3d && start Z:\\usr\\glibc\\opt\\prefix\\d3d\\dxvk-async-1.10.3.bat" &>/dev/null
+			sleep 1
+			echo "Installing turnip-v6.5"
+			DISPLAY=:0 taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine explorer /desktop=shell,640x480 cmd /c "cd Z:\\usr\\glibc\\opt\\prefix\\mesa && start Z:\\usr\\glibc\\opt\\prefix\\mesa\\turnip-v6.5.bat" &>/dev/null
+		else
+			sleep 1
+			echo "Installing wined3d-8.0.2"
+			DISPLAY=:0 taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine explorer /desktop=shell,640x480 cmd /c "cd Z:\\usr\\glibc\\opt\\prefix\\d3d && start Z:\\usr\\glibc\\opt\\prefix\\d3d\\wined3d-8.0.2.bat" &>/dev/null
+		fi
+	fi
+	sleep 3
+	
+	if [ -e $WINE_PATH/lib/wine/i386-unix/libwine.so.1 ] || [ -e $WINE_PATH/lib64/wine/x86_64-unix/libwine.so.1 ]; then
+		mv $WINE_PATH/lib/wine/i386-windows/shell32.dll $WINE_PATH/lib/wine/i386-windows/shell32-bak.dll &>/dev/null
+		mv $WINE_PATH/lib/wine/x86_64-windows/shell32.dll $WINE_PATH/lib/wine/x86_64-windows/shell32-bak.dll &>/dev/null
+		mv $WINE_PATH/lib64/wine/x86_64-windows/shell32.dll $WINE_PATH/lib64/wine/x86_64-windows/shell32-bak.dll &>/dev/null
+		mv $WINE_PATH/lib64/wine/i386-windows/shell32.dll $WINE_PATH/lib64/wine/i386-windows/shell32-bak.dll &>/dev/null
+	else
+		rm -rf $WINE_PATH/lib/wine/i386-unix/shell32.dll.so &>/dev/null
+		rm -rf $WINE_PATH/lib/wine/x86_64-unix/shell32.dll.so &>/dev/null
+		rm -rf $WINE_PATH/lib64/wine/x86_64-unix/shell32.dll.so &>/dev/null
+		rm -rf $WINE_PATH/lib64/wine/i386-unix/shell32.dll.so &>/dev/null
+	fi
+	$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
+fi
+
+if ! ls $PREFIX/glibc/opt/prefix/start/Registry/2.* &>/dev/null; then
+	cp -r $PREFIX/glibc/opt/prefix/start/Registry/2.* $WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start\ Menu/Registry
+fi
+
+rm -rf "$WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start Menu/Install/media foundation (for RE)"
+
+if [ ! -e "$WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start Menu/Install/media foundation (for RE).lnk" ]; then
+	cp "$PREFIX/glibc/opt/prefix/start/Install/media foundation (for RE).lnk" "$WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start Menu/Install"
+fi
+
+rm -rf $PREFIX/glibc/opt/prefix/start-default
+
+rm -d $PREFIX/glibc/opt/prefix/start/Install/1.* &>/dev/null
+rm -d $PREFIX/glibc/opt/prefix/start/Install/2.* &>/dev/null
+rm -d $WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start\ Menu/Install/1.* &>/dev/null
+rm -d $WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start\ Menu/Install/2.* &>/dev/null
+
+if ls $PREFIX/glibc/opt/prefix/start/Install/1.* &>/dev/null && ls $WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start\ Menu/Install/1.* &>/dev/null; then
+	rm -rf $WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start\ Menu/Install/1.*/* &>/dev/null
+	cp $PREFIX/glibc/opt/prefix/start/Install/1.*/* $WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start\ Menu/Install/1.* &>/dev/null
+fi
+
+if ls $PREFIX/glibc/opt/prefix/start/Install/2.* &>/dev/null && ls $WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start\ Menu/Install/2.* &>/dev/null; then
+	rm -rf $WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start\ Menu/Install/2.*/* &>/dev/null
+	cp $PREFIX/glibc/opt/prefix/start/Install/2.*/* $WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start\ Menu/Install/2.* &>/dev/null
+fi
+
+mkdir -p $WINEPREFIX/moboxmeta
+if [ ! -f $WINEPREFIX/moboxmeta/services-fix-applied ]; then
+	echo "Applying services fix"
+	taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine regedit $PREFIX/glibc/opt/prefix/fix-services.reg &>/dev/null
+	sleep 5
+	$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
+	touch $WINEPREFIX/moboxmeta/services-fix-applied
+fi
+if [ ! -f $WINEPREFIX/moboxmeta/fonts-fix-applied ]; then
+	echo "Applying fonts fix"
+	tar -xf $PREFIX/glibc/opt/prefix/fix-fonts.tar.xz -C $WINEPREFIX/drive_c/windows
+	touch $WINEPREFIX/moboxmeta/fonts-fix-applied
+fi
+if [ ! -f $WINEPREFIX/moboxmeta/dxdlls-fix-applied ]; then
+	echo "Applying dlls fix"
+	7z x $PREFIX/glibc/opt/prefix/directx.7z -o$WINEPREFIX/drive_c -y &>/dev/null
+	taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine regedit $PREFIX/glibc/opt/prefix/user.reg &>/dev/null
+	sleep 5
+	$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
+	touch $WINEPREFIX/moboxmeta/dxdlls-fix-applied
+fi
+
+load_configs
+# Переименование переменных
+export BOX64_DYNAREC_ALIGNED_ATOMICS=$BOX64_DYNAREC_ALIGNED_ATOMICS_WOW
+export BOX64_DYNAREC_BIGBLOCK=$BOX64_DYNAREC_BIGBLOCK_WOW
+export BOX64_DYNAREC_FASTNAN=$BOX64_DYNAREC_FASTNAN_WOW
+export BOX64_DYNAREC_SAFEFLAGS=$BOX64_DYNAREC_SAFEFLAGS_WOW
+export BOX64_DYNAREC_STRONGMEM=$BOX64_DYNAREC_STRONGMEM_WOW
+export BOX64_DYNAREC_WAIT=$BOX64_DYNAREC_WAIT_WOW
+export BOX64_DYNAREC_X87DOUBLE=$BOX64_DYNAREC_X87DOUBLE_WOW
+export BOX64_DYNAREC_CALLRET=$BOX64_DYNAREC_CALLRET_WOW
+export BOX64_DYNAREC_FASTROUND=$BOX64_DYNAREC_FASTROUND_WOW
+export BOX64_IGNOREINT3=$BOX64_IGNOREINT3_WOW
+export RESOLUTION=$RESOLUTION_WOW
+export PULSE_SERVER=127.0.0.1
+
+
+    # Если значение "off", запускаем 
+    ln -sf $(df -H | grep -o "/storage/....-....") "$WINEPREFIX/dosdevices/f:" &>/dev/null
+taskset -c $SECONDARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine start /min /unix $PREFIX/glibc/bin/ib.exe &>/dev/null &
+DISPLAY=:0 taskset -c $SECONDARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine start /min /unix $PREFIX/glibc/opt/apps/f5taskmgr.exe &>/dev/null &&
+if [ "$STARTUP_WINEDEVICE_MODE" = "0" ]; then
+	$GLIBC_BIN/box64 $GLIBC_BIN/wine taskkill /f /im services.exe &>/dev/null &
+fi
+DISPLAY=:0 LC_ALL=$(cat $PREFIX/glibc/opt/locale.conf) taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine start /min /unix $ORIGINAL_FILE &>$LOG_PATH 2>&1 &&
+
+
+am start --user 0 -n com.termux.x11/.MainActivity &>/dev/null
+
+echo "Нажмите 1 для завершения"
+echo "$BOX64_DYNAREC_FASTNAN g $BOX64_DYNAREC_X87DOUBLE"
+sleep 2
+pkill feh &>/dev/null &
+
+
+REBOOT=0
+while true; do
+if [ -e $PREFIX/glibc/opt/shutdown ]; then
+	rm -rf $PREFIX/glibc/opt/shutdown
+	$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
+	break
+fi
+if [ -e $PREFIX/glibc/opt/reboot ]; then
+	rm -rf $PREFIX/glibc/opt/reboot
+	$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
+	REBOOT=1
+	break
+fi
+read -t 3 i
+case "$i" in
+1)
+	$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
+	break
+;;
+esac
+done
+
+export LD_PRELOAD=/data/data/com.termux/files/usr/lib/libtermux-exec.so
+stop-all
+
+if [ "$REBOOT" = "1" ]; then
+	exec $0
+fi
+else
+echo "Mobox Wow64 не установлен"
+exit 1
+fi
