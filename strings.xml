@@ -1,549 +1,1056 @@
 #!/bin/bash
-echo ЗАГРУЗКА....
+clear
 
-export CONFIG_SETTINGS_GAME=speed.lnk
+# Пример переменных настроек
+result="${CONFIG_GAME%.lnk}"
+echo "$result"
+CONFIG="$PREFIX/mobox/set_game/$CONFIG_GAME"
+source "$CONFIG"
 
-pulseaudio --start --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" --exit-idle-time=-1
-termux-x11 :0 &>/dev/null &
-export PULSE_SERVER=127.0.0.1
-export DISPLAY=:0
+save_settings() {
+local settings=(
+        "$ATOMICS_64"
+        "$ATOMICS_86"
+        "$BIGS_64"
+        "$BIGS_86"
+        "$FAST_64"
+        "$FAST_86"
+        "$SAF_64"
+        "$SAF_86"
+        "$STRONG_64"
+        "$STRONG_86"
+        "$WAIT_64"
+        "$WAIT_86"
+        "$X87DOUBLE_64"
+        "$X87DOUBLE_86"
+        "$CALL_64"
+        "$CALL_86"
+        "TURNIP=$TURNIP"
+        "DXVK=$DXVK"
+        "DESKTOP_SHELL=$DESKTOP_SHELL"
+        "CORES=$CORES"
+        "PRIMARY=$PRIMARY"
+        "SECONDARY=$SECONDARY"
+        "FPS_LIM=$FPS_LIM"
+        "DX_VER=$DX_VER"
+        "RESOLUTION=$RESOLUTION"
+
+        "$ATOMICS_WOW"
+        "$BIGS64_WOW"
+        "$FASTMAN_WOW"
+        "$SAFEFLAGS_WOW"
+        "$STRONGMEM_WOW"
+        "$WAIT_WOW"
+        "$X87DOUBLE_WOW"
+        "$CALLRET_WOW"
+        "$FASTROUND_WOW"
+        "$IGNOREINT3_WOW"
+        "TURNIP_WOW=$TURNIP_WOW"
+        "DXVK_WOW=$DXVK_WOW"
+        "DESKTOP_SHELL_WOW=$DESKTOP_SHELL_WOW"
+        "CORES_WOW=$CORES_WOW"
+        "PRIMARY_WOW=$PRIMARY_WOW"
+        "SECONDARY_WOW=$SECONDARY_WOW"
+        "FPS_LIM_WOW=$FPS_LIM_WOW"
+        "DX_VER_WOW=$DX_VER_WOW"
+        "RESOLUTION_WOW=$RESOLUTION_WOW"
+
+        "ALIGNED_ATOMICS=$ALIGNED_ATOMICS"
+        "BIGBLOCK_64=$BIGBLOCK_64"
+        "BIGBLOCK_86=$BIGBLOCK_86"
+        "FASTNAN=$FASTNAN"
+        "SAFEFLAGS=$SAFEFLAGS"
+        "STRONGMEM=$STRONGMEM"
+        "WAIT=$WAIT"
+        "X87DOUBLE=$X87DOUBLE"
+        "CALLRET=$CALLRET"
+
+    "BOX64_DYNAREC_ALIGNED_ATOMICS_WOW=$BOX64_DYNAREC_ALIGNED_ATOMICS_WOW"
+        "BOX64_DYNAREC_BIGBLOCK_WOW=$BOX64_DYNAREC_BIGBLOCK_WOW"
+        "BOX64_DYNAREC_FASTNAN_WOW=$BOX64_DYNAREC_FASTNAN_WOW"
+        "BOX64_DYNAREC_SAFEFLAGS_WOW=$BOX64_DYNAREC_SAFEFLAGS_WOW"
+        "BOX64_DYNAREC_STRONGMEM_WOW=$BOX64_DYNAREC_STRONGMEM_WOW"
+        "BOX64_DYNAREC_WAIT_WOW=$BOX64_DYNAREC_WAIT_WOW"
+        "BOX64_DYNAREC_X87DOUBLE_WOW=$BOX64_DYNAREC_X87DOUBLE_WOW"
+        "BOX64_DYNAREC_CALLRET_WOW=$BOX64_DYNAREC_CALLRET_WOW"
+        "BOX64_DYNAREC_FASTROUND_WOW=$BOX64_DYNAREC_FASTROUND_WOW"
+        "BOX64_IGNOREINT3_WOW=$BOX64_IGNOREINT3_WOW"
+
+        "BOX_VERS=$BOX_VERS"
+        
+    )
+
+    printf "%s\n" "${settings[@]}" > "$CONFIG"
+}
+
+handle_dynarec_choice() {
+    local choice="$1"
+    case "$choice" in
+        1) 
+            # Переключение настройки выравнивания атомарных операций
+case $ALIGNED_ATOMICS in
+        0) ALIGNED_ATOMICS=1 
+        ATOMICS_64="export BOX64_DYNAREC_ALIGNED_ATOMICS=1"
+        ATOMICS_86="export BOX86_DYNAREC_ALIGNED_ATOMICS=1";;
+        1) ATOMICS_64="unset BOX64_DYNAREC_ALIGNED_ATOMICS"
+        ATOMICS_86="unset BOX86_DYNAREC_ALIGNED_ATOMICS"
+        ALIGNED_ATOMICS="-"
+        ;;
+        *) ALIGNED_ATOMICS=0 
+        ATOMICS_64="export BOX64_DYNAREC_ALIGNED_ATOMICS=0"
+        ATOMICS_86="export BOX86_DYNAREC_ALIGNED_ATOMICS=0";;
+            esac
+            echo "Выравнивание атомарных операций отключено."
+            ;;
+        2) 
+            # Циклическое изменение BIGBLOCK для BOX64
+            case $BIGBLOCK_64 in
+                0) BIGBLOCK_64=1 
+                BIGS_64="export BOX64_DYNAREC_BIGBLOCK=1" ;;
+                1) BIGBLOCK_64=2 
+                BIGS_64="export BOX64_DYNAREC_BIGBLOCK=2" ;;
+                2) 
+                BIGS_64="unset BOX64_DYNAREC_BIGBLOCK" BIGBLOCK_64="-"
+                ;;
+                *) BIGBLOCK_64=0 
+                BIGS_64="export BOX86_DYNAREC_BIGBLOCK=0" ;;
+            esac
+            echo "BIGBLOCK для BOX64 изменен на "
+            ;;
+            
+        3) 
+            # Циклическое изменение BIGBLOCK для BOX86
+            case $BIGBLOCK_86 in
+                0) BIGBLOCK_86=1 
+                BIGS_86="export BOX86_DYNAREC_BIGBLOCK=1";;
+                1) BIGBLOCK_86=2 
+                BIGS_86="export BOX86_DYNAREC_BIGBLOCK=2";;
+                2) BIGBLOCK_86="-"
+                 BIGS_86="unset BOX86_DYNAREC_BIGBLOCK"
+                ;;
+                *) BIGBLOCK_86=0 
+                BIGS_86="export BOX86_DYNAREC_BIGBLOCK=0";;
+            esac
+            echo "BIGBLOCK для BOX86 изменен на "
+            ;;
+        4) 
+            # Переключение FASTNAN
+            case $FASTMAN in
+                0) FASTNAN="1" 
+	FAST_64="export BOX64_DYNAREC_FASTMAN=1"
+	FAST_86="export BOX86_DYNAREC_FASTMAN=1";;
+                1) FASTNAN= "-"
+	FAST_64="unset BOX64_DYNAREC_FASTMAN"
+	FAST_86="unset BOX86_DYNAREC_FASTMAN";;
+                *) FASTNAN= "0"
+	FAST_64="export BOX64_DYNAREC_FASTMAN=0"
+	FAST_86="export BOX86_DYNAREC_FASTMAN=0;;
+            esac
+            echo "FASTNAN теперь ${BOX64_DYNAREC_FASTNAN}."
+            ;;
+        5) 
+            # Переключение SAFEFLAGS
+            case $SAFEFLAGS in
+                0) SAFEFLAGS="1";;
+	SAF_64="export BOX64_DYNAREC_SAFEFLAGS=1"
+  	SAF_86="export BOX86_DYNAREC_SAFEFLAGS=1";;
+                1) SAFEFLAGS="2";;
+	SAF_64="export BOX64_DYNAREC_SAFEFLAGS=2" 
+	SAF_86="export BOX86_DYNAREC_SAFEFLAGS=2";;       
+                2) SAFEFLAGS="-"
+                  SAF_64="unset BOX64_DYNAREC_SAFEFLAGS"
+	SAF_86="unset BOX64_DYNAREC_SAFEFLAGS";;
+                *) SAFEFLAGS="0";;
+	SAF_64="export BOX64_DYNAREC_SAFEFLAGS=0" 
+	SAF_86="export BOX86_DYNAREC_SAFEFLAGS=0";;
+            esac
+            echo "SAFEFLAGS теперь ${BOX64_DYNAREC_SAFEFLAGS}."
+            ;;
+        6) 
+            # Переключение STRONGMEM
+            case $STRONGMEM in
+                0) STRONGMEM="1"
+                STRONG_64="export BOX64_DYNAREC_STRONGMEM=1"
+                STRONG_86="export BOX86_DYNAREC_STRONGMEM=1";;
+                1) STRONGMEM="2"
+                STRONG_64="export BOX64_DYNAREC_STRONGMEM=2"
+                STRONG_86="export BOX86_DYNAREC_STRONGMEM=2";;
+                2) STRONGMEM="3"
+                STRONG_64="export BOX64_DYNAREC_STRONGMEM=3"
+                STRONG_86="export BOX86_DYNAREC_STRONGMEM=3";;
+                3) STRONGMEM="-"
+                STRONG_64="unset BOX64_DYNAREC_STRONGMEM"
+                STRONG_86="unset BOX86_DYNAREC_STRONGMEM";;
+                *) STRONGMEM="0"
+                STRONG_64="export BOX64_DYNAREC_STRONGMEM=0"
+                STRONG_86="export BOX86_DYNAREC_STRONGMEM=0";;
+            esac
+            echo "STRONGMEM теперь ${BOX64_DYNAREC_STRONGMEM}."
+            ;;
+        7) 
+            # Переключение WAIT
+            case $WAIT in
+                0) WAIT="1"
+                WAIT_64="export BOX64_DYNAREC_WAIT=1"
+                WAIT_86="export BOX86_DYNAREC_WAIT=1";;
+                1)  WAIT="-"
+                WAIT_64="unset BOX64_DYNAREC_WAIT"
+                WAIT_86="unset BOX86_DYNAREC_WAIT";;
+                *)  WAIT="0"
+                WAIT_64="export BOX64_DYNAREC_WAIT=0"
+                WAIT_86="export BOX86_DYNAREC_WAIT=0";;
+            esac
+            echo "WAIT теперь ${BOX64_DYNAREC_WAIT}."
+            ;;
+        8) 
+            # Переключение X87DOUBLE
+            case $X87DOUBLE in
+                0) X87DOUBLE="1"
+	X87DOUBLE_64="export BOX64_DYNAREC_X87DOUBLE=1"
+	X87DOUBLE_86="export BOX86_DYNAREC_X87DOUBLE=1";;
+                1) X87DOUBLE="-1"
+	X87DOUBLE_64="unset BOX64_DYNAREC_X87DOUBLE"
+	X87DOUBLE_86="unset BOX86_DYNAREC_X87DOUBLE";;
+                *) X87DOUBLE="0"
+	X87DOUBLE_64="export BOX64_DYNAREC_X87DOUBLE=0"
+	X87DOUBLE_86="export BOX86_DYNAREC_X87DOUBLE=0";;
+            esac
+            echo "X87DOUBLE теперь ${BOX64_DYNAREC_X87DOUBLE}."
+            ;;
+        9) 
+            # Переключение CALLRET
+            case $CALLRET in
+                0) CALLRET="1"
+	CALL_64="export BOX64_DYNAREC_CALLRET=1"
+                	CALL_86="export BOX86_DYNAREC_CALLRET=1";;
+                1) CALLRET="-"
+	CALL_64="unset BOX64_DYNAREC_CALLRET"
+                	CALL_86="unset BOX86_DYNAREC_CALLRET";;
+                *) CALLRET="0"
+	CALL_64="export BOX64_DYNAREC_CALLRET=0"
+                	CALL_86="export BOX86_DYNAREC_CALLRET=0";;
+            esac
+            echo "CALLRET теперь ${BOX64_DYNAREC_CALLRET}."
+            ;;
+        10) reset_dynarec_defaults
+            BOX64_DYNAREC_ALIGNED_ATOMICS=
+            ATOMICS="÷"
+            BOX64_DYNAREC_BIGBLOCK=2
+            BIGS64="2"
+            BOX86_DYNAREC_BIGBLOCK=0
+            BIGS86="0"
+            BOX64_DYNAREC_FASTNAN=
+            FASTMAN="÷"
+            BOX64_DYNAREC_SAFEFLAGS=2
+            SAFEFLAGS="2"
+            BOX64_DYNAREC_STRONGMEM=
+            STRONGMEM="÷"
+            BOX64_DYNAREC_WAIT=
+            WAIT="÷"
+            BOX64_DYNAREC_X87DOUBLE=1
+            X87DOUBLE="1"
+            BOX64_DYNAREC_CALLRET=0
+            CALLRET="0"
+            ;;
+
+        1.) 
+            # Переключение настройки выравнивания атомарных операций
+case $BOX64_DYNAREC_ALIGNED_ATOMICS_WOW in
+        0) BOX64_DYNAREC_ALIGNED_ATOMICS_WOW=1 
+        ATOMICS_WOW="1";;
+        1) ATOMICS_WOW="+"
+        unset BOX64_DYNAREC_ALIGNED_ATOMICS_WOW
+        ;;
+        *) BOX64_DYNAREC_ALIGNED_ATOMICS_WOW=0 
+        ATOMICS_WOW="0";;
+            esac
+            echo "Выравнивание атомарных операций отключено."
+            ;;
+        2.) 
+            # Циклическое изменение BIGBLOCK для BOX64
+            case $BOX64_DYNAREC_BIGBLOCK_WOW in
+                0) BOX64_DYNAREC_BIGBLOCK_WOW=1 
+                BIGS64_WOW="1";;
+                1) BOX64_DYNAREC_BIGBLOCK_WOW=2 
+                BIGS64_WOW="2";;
+                2) BIGS64_WOW="÷"
+                unset BOX64_DYNAREC_BIGBLOCK_WOW ;;
+                *) BOX64_DYNAREC_BIGBLOCK_WOW=0 
+                BIGS64_WOW="0";;
+            esac
+            echo "BIGBLOCK для BOX64 изменен на $BOX64_DYNAREC_BIGBLOCK_WOW."
+            ;;
+        3.) 
+            # Переключение FASTNAN_WOW
+            case $BOX64_DYNAREC_FASTNAN_WOW in
+                0) BOX64_DYNAREC_FASTNAN_WOW=1 
+                FASTMAN_WOW="1";;
+                1) 
+                FASTMAN_WOW="÷"
+                unset BOX64_DYNAREC_FASTNAN_WOW ;;
+                *) BOX64_DYNAREC_FASTNAN_WOW=0 
+                FASTMAN_WOW="0";;
+            esac
+            echo "FASTNAN_WOW теперь ${BOX64_DYNAREC_FASTNAN_WOW}."
+            ;;
+        4.) 
+            # Переключение SAFEFLAGS_WOW
+            case $BOX64_DYNAREC_SAFEFLAGS_WOW in
+                0) BOX64_DYNAREC_SAFEFLAGS_WOW=1 
+                SAFEFLAGS_WOW="1";;
+                1) BOX64_DYNAREC_SAFEFLAGS_WOW=2 
+                SAFEFLAGS_WOW="2";;
+                2) 
+                SAFEFLAGS_WOW="÷"
+                unset BOX64_DYNAREC_SAFEFLAGS_WOW ;;
+                *) BOX64_DYNAREC_SAFEFLAGS_WOW=0 
+                SAFEFLAGS_WOW="0";;
+            esac
+            echo "SAFEFLAGS_WOW теперь ${BOX64_DYNAREC_SAFEFLAGS_WOW}."
+            ;;
+        5.) 
+            # Переключение STRONGMEM_WOW
+            case $BOX64_DYNAREC_STRONGMEM_WOW in
+                0) BOX64_DYNAREC_STRONGMEM_WOW=1 
+                STRONGMEM_WOW="1";;
+                1) BOX64_DYNAREC_STRONGMEM_WOW=2 
+                STRONGMEM_WOW="2";;
+                2) BOX64_DYNAREC_STRONGMEM_WOW=3 
+                STRONGMEM_WOW="3";;
+                3) 
+                STRONGMEM_WOW="÷"
+                unset BOX64_DYNAREC_STRONGMEM_WOW ;;
+                *) BOX64_DYNAREC_STRONGMEM_WOW=0 
+                STRONGMEM_WOW="0";;
+            esac
+            echo "STRONGMEM_WOW теперь ${BOX64_DYNAREC_STRONGMEM_WOW}."
+            ;;
+        6.) 
+            # Переключение WAIT_WOW
+            case $BOX64_DYNAREC_WAIT_WOW in
+                0) BOX64_DYNAREC_WAIT_WOW=1 
+                WAIT_WOW="1";;
+                1) 
+                WAIT_WOW="÷"
+                unset BOX64_DYNAREC_WAIT_WOW ;;
+                *) BOX64_DYNAREC_WAI_WOWT=0 
+                WAIT_WOW="0";;
+            esac
+            echo "WAIT теперь ${BOX64_DYNAREC_WAIT_WOW}."
+            ;;
+        7.) 
+            # Переключение X87DOUBLE_WOW
+            case $BOX64_DYNAREC_X87DOUBLE_WOW in
+                0) BOX64_DYNAREC_X87DOUBLE_WOW=1 
+                X87DOUBLE_WOW="1";;
+                1) 
+                X87DOUBLE_WOW="÷"
+                unset BOX64_DYNAREC_X87DOUBLE_WOW ;;
+                *) BOX64_DYNAREC_X87DOUBLE_WOW=0 
+                X87DOUBLE_WOW="0";;
+            esac
+            echo "X87DOUBLE_WOW теперь ${BOX64_DYNAREC_X87DOUBLE_WOW}."
+            ;;
+        8.) 
+            # Переключение CALLRET_WOW
+            case $BOX64_DYNAREC_CALLRET_WOW in
+                0) BOX64_DYNAREC_CALLRET_WOW=1 
+                CALLRET_WOW="1";;
+                1) 
+                CALLRET_WOW="÷"
+                unset BOX64_DYNAREC_CALLRET_WOW ;;
+                *) BOX64_DYNAREC_CALLRET_WOW=0 
+                CALLRET_WOW="0";;
+            esac
+            echo "CALLRET теперь ${BOX64_DYNAREC_CALLRET_WOW}."
+            ;;
+        9.) 
+            # Переключение FASTROUND_WOW
+            case $BOX64_DYNAREC_FASTROUND_WOW in
+                0) BOX64_DYNAREC_FASTROUND_WOW=1 
+                FASTROUND_WOW="1";;
+                1) 
+                FASTROUND_WOW="÷"
+                unset BOX64_DYNAREC_FASTROUND_WOW ;;
+                *) BOX64_DYNAREC_FASTROUND_WOW=0 
+                FASTROUND_WOW="0";;
+            esac
+            echo "FASTROUND_WOW теперь ${BOX64_DYNAREC_FASTROUND_WOW}."
+            ;;
+        10.) 
+            # Переключение IGNOREINT3_WOW
+            case $BOX64_IGNOREINT3_WOW in
+                0) BOX64_IGNOREINT3_WOW=1 
+                IGNOREINT3_WOW="1";;
+                1) 
+                IGNOREINT3_WOW="÷"
+                unset BOX64_IGNOREINT3_WOW ;;
+                *) BOX64_IGNOREINT3_WOW=0 
+                IGNOREINT3_WOW="0";;
+            esac
+            echo "IGNOREINT3_WOW теперь ${BOX64_IGNOREINT3_WOW}."
+            ;;
+        11.) reset_dynarec_defaults
+            BOX64_DYNAREC_ALIGNED_ATOMICS_WOW=
+            ATOMICS_WOW="÷"
+            BOX64_DYNAREC_BIGBLOCK_WOW=2
+            BIGS64_WOW="2"
+            BOX64_DYNAREC_FASTNAN_WOW=
+            FASTMAN_WOW="÷"
+            BOX64_DYNAREC_SAFEFLAGS_WOW=2
+            SAFEFLAGS_WOW="2"
+            BOX64_DYNAREC_STRONGMEM_WOW=
+            STRONGMEM_WOW="÷"
+            BOX64_DYNAREC_WAIT_WOW=
+            WAIT_WOW="÷"
+            BOX64_DYNAREC_X87DOUBLE_WOW=1
+            X87DOUBLE_WOW="1"
+            BOX64_DYNAREC_CALLRET_WOW=0
+            CALLRET_WOW="0"
+            BOX64_DYNAREC_FASTROUND_WOW=
+            FASTROUND_WOW="÷"
+            BOX64_IGNOREINT3_WOW=
+            IGNOREINT3_WOW="÷"
+            ;;
+    esac
+}
 
 
-# путь к исполняемому файлу
-export ORIGINAL_FILE=$HOME/Desktop/$CONFIG_SETTINGS_GAME
-. $PREFIX/mobox/set_game/$CONFIG_SETTINGS_GAME &>/dev/null
+set_resolution() {
+    # Запрос разрешения экрана у пользователя
+    RESOLUTION=$(dialog --inputbox "Введите разрешение экрана (например, 960x540):" 8 40 2>&1 >/dev/tty)
 
-file_path="$PREFIX/glibc/opt/scripts/mobox_menu"
-    value=$(grep 'Mobox' "$file_path" | sed -E 's/.*Mobox([^"]*).*/\1/')
-    
+    # Проверка нажатия кнопки "Отмена"
+    if [ $? -ne 0 ]; then
+        echo "Вы отменили выбор разрешения."
+        return
+    fi
+    # Проверка формата разрешения
+    if [[ ! "$RESOLUTION" =~ ^[0-9]+x[0-9]+$ ]]; then
+        dialog --msgbox "Неверный формат разрешения. Пожалуйста, введите в формате WIDTHxHEIGHT (например, 960x540)." 10 50
+        return
+    fi
+    # Установка разрешения
+    echo "Разрешение экрана установлено на $RESOLUTION."
+    # Здесь можно сохранить значение в переменной или конфигурационном файле
+}
+
+
+set_resolution() {
+    # Запрос разрешения экрана у пользователя
+    RESOLUTION_WOW=$(dialog --inputbox "Введите разрешение экрана (например, 960x540):" 8 40 2>&1 >/dev/tty)
+
+    # Проверка нажатия кнопки "Отмена"
+    if [ $? -ne 0 ]; then
+        echo "Вы отменили выбор разрешения."
+        return
+    fi
+    # Проверка формата разрешения
+    if [[ ! "$RESOLUTION_WOW" =~ ^[0-9]+x[0-9]+$ ]]; then
+        dialog --msgbox "Неверный формат разрешения. Пожалуйста, введите в формате WIDTHxHEIGHT (например, 960x540)." 10 50
+        return
+    fi
+    # Установка разрешения
+    echo "Разрешение экрана установлено на $RESOLUTION_WOW"
+    # Здесь можно сохранить значение в переменной или конфигурационном файле
+}
+
+
+while true; do
     if [ "$BOX_VERS" == "X86" ]; then
+        dialog_text="Настройки игры $result: $CONFIG_SETTINGS_GAME\n\
+=====================================
+\n\
+Версия Mobox:     box86 \n\
+DYNAREC:          $ALIGNED_ATOMICS,$BIGBLOCK_64,$BIGBLOCK_86,$FASTMAN,$SAFEFLAGS,$STRONGMEM,$WAIT,$X87DOUBLE,$CALLRET \n\
+Turnip:           $TURNIP \n\
+DXVK:             $DXVK \n\
+Версия DirectX:   $DX_VER \n\
+Разрешение экрана:$RESOLUTION \n\
+Выбранные ядра:   $CORES \n\
+Лимит FPS:        $FPS_LIM \n\
+=====================================
+\n\
+Выберите опцию:"
+
+    elif [ "$BOX_VERS" == "WOW64" ]; then dialog_text="Настройки игры $result: $CONFIG_SETTINGS_GAME\n\
+=====================================
+\n\
+Версия Mobox:     WoW64 \n\
+DYNAREC:          $ATOMICS_WOW,$BIGS64_WOW,$FASTMAN_WOW,$SAFEFLAGS_WOW,$STRONGMEM_WOW,$WAIT_WOW,$X87DOUBLE_WOW,$CALLRET_WOW,$FASTROUND_WOW,$IGNOREINT3_WOW\n\
+Turnip:           $TURNIP_WOW \n\
+DXVK:             $DXVK_WOW \n\
+Версия DirectX:   $DX_VER_WOW \n\
+Разрешение экрана:$RESOLUTION_WOW \n\
+Выбранные ядра:   $CORES_WOW \n\
+Лимит FPS:        $FPS_LIM_WOW \n\
+=====================================
+\n\
+Выберите опцию:"
+        
+    fi
     
-if [ -n "$value" ]; then
-if [ -d "$PREFIX/glibc-x86" ]; then
-                    mv $PREFIX/glibc $PREFIX/glibc-wow64 || { echo "Ошибка при переименовании glibc"; exit 1; }
-                    mv $PREFIX/glibc-x86 $PREFIX/glibc || { echo "Ошибка при переименовании glibc-x86"; exit 1; }
-                    else 
-                    echo "Mobox x86 не установлен"
-                    exit 1
+    # Формируем массив опций в зависимости от версии Mobox
+    options=(
+        " " "Запустить игру"\
+        "1" "Версия Mobox"
+    )
+
+    if [ "$BOX_VERS" == "X86" ]; then
+        options+=(
+            "2" "Настроить DYNAREC" \
+            "3" "Выбрать Turnip" \
+            "4" "Выбрать DXVK" \
+            "5" "Версия DirectX" \
+            "6" "Разрешение экрана" \
+            "7" "Выбрать ядра" \
+            "8" "Лимит FPS"
+        )
+    elif [ "$BOX_VERS" == "WOW64" ]; then
+        options+=(
+            "2." "Настроить DYNAREC" \
+            "3." "Выбрать Turnip" \
+            "4." "Выбрать DXVK" \
+            "5." "Версия DirectX" \
+            "6." "Разрешение экрана" \
+            "7." "Выбрать ядра" \
+            "8." "Лимит FPS"
+        )
+    fi
+
+    # Вызываем диалоговое меню
+    choice=$(dialog --title "$CONFIG_SETTINGS_GAME" --menu "$dialog_text" 27 41 "${#options[@]}" "${options[@]}" 2>&1 >/dev/tty)
+
+    case $? in
+        1) break ;;  # Выход при нажатии Cancel
+        255) continue ;;  # Игнорируем возврат 255
+    esac
+
+    case $choice in
+        " ")
+        . $HOME/.shortcuts/$CONFIG_GAME
+        exit
+        ;;
+    
+       1)
+       BOX_VERS_CHOICE=$(dialog --title "Mobox" --menu "Выберите версию:" 9 32 3 \
+                "1" "Mobox box86" \
+                "2" "Mobox WoW64" 2>&1 >/dev/tty)
+
+            case $? in
+                1) continue ;;  # Игнорируем отмену
+            esac
+
+            case $BOX_VERS_CHOICE in
+                1) BOX_VERS="X86";;
+                2) BOX_VERS="WOW64";;
+            esac
+            save_settings ;;  # Сохраняем настройки
+    
+        2)
+        while true; do
+            dynarec_choice=$(dialog --title "Настройки DYNAREC" --menu " " 17 45 11 \
+            "1" "DYNAREC_ALIGNED_ATOMICS= $ALIGNED_ATOMICS" \
+            "2" "BOX64_DYNAREC_BIGBLOCK= $BIGBLOCK_64" \
+            "3" "BOX86_DYNAREC_BIGBLOCK= $BIGBLOCK_86" \
+            "4" "DYNAREC_FASTNAN= $BOX64_DYNAREC_FASTNAN" \
+            "5" "DYNAREC_SAFEFLAGS= $BOX64_DYNAREC_SAFEFLAGS" \
+            "6" "DYNAREC_STRONGMEM= $BOX64_DYNAREC_STRONGMEM" \
+            "7" "DYNAREC_WAIT= $BOX64_DYNAREC_WAIT" \
+            "8" "DYNAREC_X87DOUBLE= $BOX64_DYNAREC_X87DOUBLE" \
+            "9" "DYNAREC_CALLRET= $BOX64_DYNAREC_CALLRET" \
+            "10" "Сброс к значению по умолчанию" 2>&1 >/dev/tty)
+
+                case $? in
+                    1) break ;;  # Выход при нажатии Cancel
+                esac
+
+                handle_dynarec_choice "$dynarec_choice"
+                save_settings
+            done
+        ;;
+        
+        2.)
+        while true; do
+            dynarec_choice=$(dialog --title "Настройки DYNAREC" --menu " " 17 45 11 \
+            "1" "DYNAREC_ALIGNED_ATOMICS= $ALIGNED_ATOMICS" \
+            "2" "BOX64_DYNAREC_BIGBLOCK= $BIGBLOCK_64" \
+            "3" "BOX86_DYNAREC_BIGBLOCK= $BIGBLOCK_86" \
+            "4" "DYNAREC_FASTNAN= $BOX64_DYNAREC_FASTNAN" \
+            "5" "DYNAREC_SAFEFLAGS= $BOX64_DYNAREC_SAFEFLAGS" \
+            "6" "DYNAREC_STRONGMEM= $BOX64_DYNAREC_STRONGMEM" \
+            "7" "DYNAREC_WAIT= $BOX64_DYNAREC_WAIT" \
+            "8" "DYNAREC_X87DOUBLE= $BOX64_DYNAREC_X87DOUBLE" \
+            "9" "DYNAREC_CALLRET= $BOX64_DYNAREC_CALLRET" \
+            "10" "Сброс к значению по умолчанию" 2>&1 >/dev/tty)
+
+                case $? in
+                    1) break ;;  # Выход при нажатии Cancel
+                esac
+
+                handle_dynarec_choice "$dynarec_choice"
+                save_settings
+            done
+        ;;
+        
+        3)
+            TURNIP_CHOICE=$(dialog --title "Выберите Turnip" --menu " " 14 40 3 \
+                "1" "Turnip Zink v3" \
+                "2" "Turnip Zinc v3.5" \
+                "3" "Turnip Zinc v4" \
+                "4" "VirGL Mesa 18.3.0" \
+                "5" "VirGL Mesa 19.1.8" \
+                "6" "VirGL Mesa 22.1.7" \
+                "7" "VirGL Mesa 24.0.0" 2>&1 >/dev/tty)
+
+            case $? in
+                1) continue ;;  # Игнорируем отмену
+            esac
+
+            case $TURNIP_CHOICE in
+                1) TURNIP="-v3";;
+                2) TURNIP="-v3.5";;
+                3) TURNIP="-v4";;
+                4) TURNIP="-virgl-mesa-18";;
+                5) TURNIP="-virgl-mesa-19";;
+                6) TURNIP="-virgl-mesa-22";;
+                7) TURNIP="-virgl-mesa-24";;
+            esac
+            save_settings ;;  # Сохраняем настройки
+        
+        3.)
+            TURNIP_CHOICE=$(dialog --title "Выберите Turnip" --menu " " 16 40 3 \
+                "1" "Turnip Zink v2" \
+                "2" "Turnip Zinc v3.5" \
+                "3" "Turnip Zinc v4" \
+                "4" "Turnip Zinc v5" \
+                "5" "Turnip Zinc v6.5" \
+                "6" "VirGL Mesa 18.3.0" \
+                "7" "VirGL Mesa 19.1.8" \
+                "8" "VirGL Mesa 22.1.7" \
+                "9" "VirGL Mesa 24.0.0" 2>&1 >/dev/tty)
+
+            case $? in
+                1) continue ;;  # Игнорируем отмену
+            esac
+
+            case $TURNIP_CHOICE in
+                1) TURNIP_WOW="-zink-v2";;
+                2) TURNIP_WOW="-zink-v3.5";;
+                3) TURNIP_WOW="-zink-v4";;
+                4) TURNIP_WOW="-zink-v5";;
+                5) TURNIP_WOW="-zink-v6.5";;
+                6) TURNIP_WOW="-virgl_mesa-18.3.0";;
+                7) TURNIP_WOW="-virgl_mesa-19.1.8";;
+                8) TURNIP_WOW="-virgl_mesa-22.1.7";;
+                9) TURNIP_WOW="-virgl_mesa-24.0.0";;
+            esac
+            save_settings ;;  # Сохраняем настройки
+            
+        4)
+            DXVK_CHOICE=$(dialog --title "Выберите DXVK" --menu " " 22 40 5 \
+                "1" "dxvk-d8vk-1.0" \
+                "2" "dxvk-0.96" \
+                "3" "dxvk-1.6.1" \
+                "4" "dxvk-async-1.10.3" \
+                "5" "dxvk-dev" \
+                "6" "dxvk-async-2.0" \
+                "7" "dxvk-gplasync-2.2" \
+                "8" "dxvk-gplasync-2.3" \
+                "9" "vkd3d" \
+                "10" "wined3d-4.13" \
+                "11" "wined3d-7.2" \
+                "12" "wined3d-7.21" \
+                "13" "wined3d-7.8" \
+                "14" "wined3d-8.0.2" \
+                "15" "wined3d-8.20" 2>&1 >/dev/tty)
+
+            case $? in
+                1) continue ;;  
+            esac
+            
+            case $DXVK_CHOICE in
+                1) DXVK="-d8vk";;
+                2) DXVK="-0.96";;
+                3) DXVK="-1.6.1";;
+                4) DXVK="-async-1.10.3";;
+                5) DXVK="-dev";;
+                6) DXVK="-async-2.0";;
+                7) DXVK="-gplasync-2.2";;
+                8) DXVK="-gplasync-2.3";;
+                9) DXVK="-vkd3d";;
+                10) DXVK="-wined3d-4.13";;
+                11) DXVK="-wined3d-7.2";;
+                12) DXVK="-wined3d-7.21";;
+                13) DXVK="-wined3d-7.8";;
+                14) DXVK="-wined3d-8.0.2";;
+                15) DXVK="-wined3d-8.20";;
+            esac
+            save_settings ;;  # Сохраняем настройки
+
+        4.)
+            DXVK_CHOICE=$(dialog --title "Выберите DXVK" --menu " " 22 40 5 \
+                "1" "dxvk-d8vk-1.0" \
+                "2" "dxvk-0.96" \
+                "3" "dxvk-1.6.1" \
+                "4" "dxvk-async-1.10.3" \
+                "5" "dxvk-dev" \
+                "6" "dxvk-async-2.0" \
+                "7" "dxvk-gplasync-2.2" \
+                "8" "dxvk-gplasync-2.3" \
+                "9" "vkd3d" \
+                "10" "wined3d-4.13" \
+                "11" "wined3d-7.2" \
+                "12" "wined3d-7.21" \
+                "13" "wined3d-7.8" \
+                "14" "wined3d-8.0.2" \
+                "15" "wined3d-8.20" 2>&1 >/dev/tty)
+
+            case $? in
+                1) continue ;;  
+            esac
+            
+            case $DXVK_CHOICE in
+                1) DXVK_WOW="-d8vk";;
+                2) DXVK_WOW="-0.96";;
+                3) DXVK_WOW="-1.6.1";;
+                4) DXVK_WOW="-async-1.10.3";;
+                5) DXVK_WOW="-dev";;
+                6) DXVK_WOW="-async-2.0";;
+                7) DXVK_WOW="-gplasync-2.2";;
+                8) DXVK_WOW="-gplasync-2.3";;
+                9) DXVK_WOW="-vkd3d";;
+                10) DXVK_WOW="-wined3d-4.13";;
+                11) DXVK_WOW="-wined3d-7.2";;
+                12) DXVK_WOW="-wined3d-7.21";;
+                13) DXVK_WOW="-wined3d-7.8";;
+                14) DXVK_WOW="-wined3d-8.0.2";;
+                15) DXVK_WOW="-wined3d-8.20";;
+            esac
+            save_settings ;;  # Сохраняем настройки
+
+        5) 
+            DX_VER_CHOICE=$(dialog --title "Выберите максимальный DirectX" --menu " " 16 40 5 \
+                "1" "DirectX 9.1" \
+                "2" "DirectX 9.2" \
+                "3" "DirectX 9.3" \
+                "4" "DirectX 10.0" \
+                "5" "DirectX 10.1" \
+                "6" "DirectX 11.0" \
+                "7" "DirectX 11.1" \
+                "8" "DirectX 12.0" \
+                "9" "DirectX 12.1" 2>&1 >/dev/tty)
+
+            case $? in
+                1) continue ;;  # Игнорируем отмену
+            esac
+
+            case $DX_VER_CHOICE in
+                1) DX_VER="9_1";;
+                2) DX_VER="9_2";;
+                3) DX_VER="9_3";;
+                4) DX_VER="10_0";;
+                5) DX_VER="10_1";;
+                6) DX_VER="11_0";;
+                7) DX_VER="11_1";;
+                8) DX_VER="12_0";;
+                9) DX_VER="12_1";;
+            esac
+            save_settings ;;  # Сохраняем настройки
+            
+        5.) 
+            DX_VER_CHOICE=$(dialog --title "Выберите максимальный DirectX" --menu " " 16 40 5 \
+                "1" "DirectX 9.1" \
+                "2" "DirectX 9.2" \
+                "3" "DirectX 9.3" \
+                "4" "DirectX 10.0" \
+                "5" "DirectX 10.1" \
+                "6" "DirectX 11.0" \
+                "7" "DirectX 11.1" \
+                "8" "DirectX 12.0" \
+                "9" "DirectX 12.1" 2>&1 >/dev/tty)
+
+            case $? in
+                1) continue ;;  # Игнорируем отмену
+            esac
+
+            case $DX_VER_CHOICE in
+                1) DX_VER_WOW="9_1";;
+                2) DX_VER_WOW="9_2";;
+                3) DX_VER_WOW="9_3";;
+                4) DX_VER_WOW="10_0";;
+                5) DX_VER_WOW="10_1";;
+                6) DX_VER_WOW="11_0";;
+                7) DX_VER_WOW="11_1";;
+                8) DX_VER_WOW="12_0";;
+                9) DX_VER_WOW="12_1";;
+            esac
+            save_settings ;;  # Сохраняем настройки
+
+ 6)
+            RES_GAME_CHOICE=$(dialog --title "Выберите разрешение экрана" --menu "\n
+Внимание:\n
+Выставить такое же разрешение экрана и в Termux-x11 или WEG™:x11" 27 40 5 \
+                "1"  "Ручной ввод (WxH)" \
+                "2"  "320x200     (16:10)" \
+                "3"  "320x240     (4:3)" \
+                "4"  "320×256     (5:4)" \
+                "5"  "400x240     (5:3)" \
+                "6"  "640x360     (16:9)" \
+                "7"  "640x400     (16:10)" \
+                "8"  "640x480     (4:3)" \
+                "9"  "800x480     (5:3)" \
+                "10" "800x600     (4:3)" \
+                "11" "854x480     (16:9)" \
+                "12" "960x540     (16:9)" \
+                "13" "1024x576    (16:9)" \
+                "14" "1024x768    (4:3)" \
+                "15" "1152x648    (16:9)" \
+                "16" "1152x720    (16:10)" \
+                "17" "1200x648    (16:9)" \
+                "18" "1280x720    (16:9)" \
+                "19" "1280x800    (16:10)" \
+                "20" "1280x960    (4:3)" \
+                "21" "1280x1024   (5:4)" \
+                "22" "1400x1080   (4:3)" \
+                "23" "1600x900    (16:9)" \
+                "24" "1640x1025   (16:10)" \
+                "25" "1680x1050   (16:10)" \
+                "26" "1920x1080   (16:9)" \
+                "27" "1920x1200   (16:10)"  2>&1 >/dev/tty)
+
+            case $? in
+                1) continue ;;  # Игнорируем отмену
+            esac
+
+            case $RES_GAME_CHOICE in
+                1)
+                set_resolution;;
+                2) RESOLUTION="320x200";;
+                3) RESOLUTION="320x240";;
+                4) RESOLUTION="320×256";;
+                5) RESOLUTION="400x240";;
+                6) RESOLUTION="640x360";;
+                7) RESOLUTION="640x400";;
+                8) RESOLUTION="640x480";;
+                9) RESOLUTION="800x480";;
+                10) RESOLUTION="800x600";;
+                11) RESOLUTION="854x480";;
+                12) RESOLUTION="960x540";;
+                13) RESOLUTION="1024x576";;
+                14) RESOLUTION="1024x768";;
+                15) RESOLUTION="1152x648";;
+                16) RESOLUTION="1152x720";;
+                17) RESOLUTION="1200x648";;
+                18) RESOLUTION="1280x720";;
+                19) RESOLUTION="1280x800";;
+                20) RESOLUTION="1280x960";;
+                21) RESOLUTION="1280x1024";;
+                22) RESOLUTION="1400x1080";;
+                23) RESOLUTION="1600x900";;
+                24) RESOLUTION="1640x1025";;
+                25) RESOLUTION="1680x1050";;
+                26) RESOLUTION="1920x1080";;
+                27) RESOLUTION="1920x1200";;
+            esac
+            save_settings   # Сохраняем настройки
+            dialog --msgbox "Внимание \n\n
+Выберите разрешение $RESOLUTION в Termux:x11 или WEG™:x11" 10 30 ;;
+
+
+ 6.)
+            RES_GAME_CHOICE=$(dialog --title "Выберите разрешение экрана" --menu "\n
+Внимание:\n
+Выставить такое же разрешение экрана и в Termux-x11 или WEG™:x11" 27 40 5 \
+                "1"  "Ручной ввод (WxH)" \
+                "2"  "320x200     (16:10)" \
+                "3"  "320x240     (4:3)" \
+                "4"  "320×256     (5:4)" \
+                "5"  "400x240     (5:3)" \
+                "6"  "640x360     (16:9)" \
+                "7"  "640x400     (16:10)" \
+                "8"  "640x480     (4:3)" \
+                "9"  "800x480     (5:3)" \
+                "10" "800x600     (4:3)" \
+                "11" "854x480     (16:9)" \
+                "12" "960x540     (16:9)" \
+                "13" "1024x576    (16:9)" \
+                "14" "1024x768    (4:3)" \
+                "15" "1152x648    (16:9)" \
+                "16" "1152x720    (16:10)" \
+                "17" "1200x648    (16:9)" \
+                "18" "1280x720    (16:9)" \
+                "19" "1280x800    (16:10)" \
+                "20" "1280x960    (4:3)" \
+                "21" "1280x1024   (5:4)" \
+                "22" "1400x1080   (4:3)" \
+                "23" "1600x900    (16:9)" \
+                "24" "1640x1025   (16:10)" \
+                "25" "1680x1050   (16:10)" \
+                "26" "1920x1080   (16:9)" \
+                "27" "1920x1200   (16:10)"  2>&1 >/dev/tty)
+
+            case $? in
+                1) continue ;;  # Игнорируем отмену
+            esac
+
+            case $RES_GAME_CHOICE in
+                1)
+                set_resolution;;
+                2) RESOLUTION_WOW="320x200";;
+                3) RESOLUTION_WOW="320x240";;
+                4) RESOLUTION_WOW="320×256";;
+                5) RESOLUTION_WOW="400x240";;
+                6) RESOLUTION_WOW="640x360";;
+                7) RESOLUTION_WOW="640x400";;
+                8) RESOLUTION_WOW="640x480";;
+                9) RESOLUTION_WOW="800x480";;
+                10) RESOLUTION_WOW="800x600";;
+                11) RESOLUTION_WOW="854x480";;
+                12) RESOLUTION_WOW="960x540";;
+                13) RESOLUTION_WOW="1024x576";;
+                14) RESOLUTION_WOW="1024x768";;
+                15) RESOLUTION_WOW="1152x648";;
+                16) RESOLUTION_WOW="1152x720";;
+                17) RESOLUTION_WOW="1200x648";;
+                18) RESOLUTION_WOW="1280x720";;
+                19) RESOLUTION_WOW="1280x800";;
+                20) RESOLUTION_WOW="1280x960";;
+                21) RESOLUTION_WOW="1280x1024";;
+                22) RESOLUTION_WOW="1400x1080";;
+                23) RESOLUTION_WOW="1600x900";;
+                24) RESOLUTION_WOW="1640x1025";;
+                25) RESOLUTION_WOW="1680x1050";;
+                26) RESOLUTION_WOW="1920x1080";;
+                27) RRESOLUTION_WOW="1920x1200";;
+                
+                            
+            
+            
+            esac
+            save_settings   # Сохраняем настройки
+            dialog --msgbox "Внимание \n\n
+Выберите разрешение $RESOLUTION_WOW в Termux:x11 или WEG™:x11" 10 30 ;;
+
+        7) 
+            CORES_CHOICE=$(dialog --title "Выберите количество ядер" --menu " " 13 40 3 \
+            "1" "с 1 по 7" \
+            "2" "с 2 по 7" \
+            "3" "с 3 по 7" \
+            "4" "с 4 по 7" \
+            "5" "с 5 по 7" \
+            "6" "6 и 7" 2>&1 >/dev/tty)
+
+            case $? in
+                1) continue ;;  # Игнорируем отмену
+            esac
+
+            case $CORES_CHOICE in
+                1) CORES="1-7"
+                PRIMARY=1-7
+                SECONDARY=0-1;;
+                2) CORES="2-7"
+                PRIMARY=2-7
+                SECONDARY=0-1;;
+                3) CORES="3-7"
+                PRIMARY=3-7
+                SECONDARY=0-2;;
+                4) CORES="3-7"
+                PRIMARY=4-7
+                SECONDARY=0-3;;
+                5) CORES="3-7"
+                PRIMARY=5-7
+                SECONDARY=0-4;;
+                6) CORES="3-7"
+                PRIMARY=6-7
+                SECONDARY=0-5;;
+            esac
+            save_settings ;;  # Сохраняем настройки
+
+        7.) 
+            CORES_CHOICE=$(dialog --title "Выберите количество ядер" --menu " " 13 40 3 \
+            "1" "с 1 по 7" \
+            "2" "с 2 по 7" \
+            "3" "с 3 по 7" \
+            "4" "с 4 по 7" \
+            "5" "с 5 по 7" \
+            "6" "6 и 7" 2>&1 >/dev/tty)
+
+            case $? in
+                1) continue ;;  # Игнорируем отмену
+            esac
+
+            case $CORES_CHOICE in
+                1) CORES_WOW="1-7"
+                PRIMARY_WOW=1-7
+                SECONDARY_WOW=0-1;;
+                2) CORES_WOW="2-7"
+                PRIMARY_WOW=2-7
+                SECONDARY_WOW=0-1;;
+                3) CORES_WOW="3-7"
+                PRIMARY_WOW=3-7
+                SECONDARY_WOW=0-2;;
+                4) CORES_WOW="3-7"
+                PRIMARY_WOW=4-7
+                SECONDARY_WOW=0-3;;
+                5) CORES_WOW="3-7"
+                PRIMARY_WOW=5-7
+                SECONDARY_WOW=0-4;;
+                6) CORES_WOW="3-7"
+                PRIMARY_WOW=6-7
+                SECONDARY_WOW=0-5;;
+            esac
+            save_settings ;;  # Сохраняем настройки
+
+        8) while true; do
+        # Ввод значения FPS
+        FPS_LIM_CHOICE=$(dialog --title "Выберите лимит FPS" --inputbox "Введите максимальное значение FPS кратное 5 (от 15 до 240 или 0):\n
+\n
+0 - без ограничения" 12 40 $FPS_LIM 2>&1 >/dev/tty)
+                case $? in
+                1) continue ;;  # Игнорируем отмену
+                esac
+                # Проверка, является ли введенное значение числом и находится ли оно в допустимом диапазоне
+                if [[ "$FPS_LIM_CHOICE" =~ ^[0-9]+$ ]] && [ "$FPS_LIM_CHOICE" -eq 0 ] || [ "$FPS_LIM_CHOICE" -ge 15 ] && [ "$FPS_LIM_CHOICE" -le 240 ]; 
+                then
+                # Проверка, кратно ли значение 5
+                if (( FPS_LIM_CHOICE % 5 == 0 )); then
+                FPS_LIM="$FPS_LIM_CHOICE"
+                break
+                else
+                dialog --msgbox "Ошибка: Пожалуйста, введите число, кратное 5." 10 30
                 fi
+                else
+                dialog --msgbox "Ошибка: Пожалуйста, введите число от 15 до 240 или 0." 10 30
                 fi
-am start --user 0 -n com.termux.x11/.MainActivity &>/dev/null
-sleep 1
-am start --user 0 -n com.termux.x11/.MainActivity &>/dev/null
-# авто создание ярлыков
-. $PREFIX/mobox/link-kreator $HOME 2>&1 &
-
-cd
-mkdir -p /sdcard/Android/data/com.termux/files/Download
-mkdir -p /sdcard/moboxtrace
-#загружает дэфолтный конфиг 
-
-#загружает настройки mobox
-. $PREFIX/mobox/configs &>/dev/null
-. $PREFIX/glibc/opt/conf/path.conf &>/dev/null
-. $PREFIX/glibc/opt/conf/cores.conf &>/dev/null
-. $PREFIX/glibc/opt/conf/force_compatibility.conf &>/dev/null
-. $PREFIX/glibc/opt/scripts/configs &>/dev/null
-. $PREFIX/mobox/cleaner_links &>/dev/null
-source "$PREFIX/mobox/set_game/$CONFIG_SETTINGS_GAME" &>/dev/null
-load_configs
-# Проверяем и очищаем директории
-cleanup_directory "$HOME/.shortcuts" &>/dev/null
-cleanup_directory "$PREFIX/mobox/set_game" &>/dev/null
-cleanup_directory "$PREFIX/mobox/game_settings" &>/dev/null
-
-
-
-function stop-all {
-	pkill -f "app_process / com.termux.x11"
-	rm -rf $PREFIX/tmp/pulse-*
-	pulseaudio -k &>/dev/null
-	unset PULSE_SERVER
-	pkill pulseaudio
-	rm -rf $PREFIX/tmp/.virgl_test &>/dev/null
-	pkill virgl
-	rm -rf $PREFIX/tmp/.virgl_test &>/dev/null
-}
-stop-all
-if [ -e $PREFIX/glibc/opt/virgl/virgl-enabled ]; then
-	chmod +x $PREFIX/glibc/opt/virgl/libvirgl_test_server.so
-	TMPDIR=$PREFIX/tmp $PREFIX/glibc/opt/virgl/libvirgl_test_server.so &>/dev/null &
-fi
-pulseaudio --start --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" --exit-idle-time=-1
-termux-x11 :0 &>/dev/null &
-sleep 1
-if [ -e $PREFIX/glibc/opt/virgl/virgl-enabled ]; then
-	chmod 777 $PREFIX/tmp/.virgl_test
-fi
-export RESOLUTION=1280x1024
-if [ "$STARTUP_COMPATIBILITY_MODE" = "1" ]; then
-	autores=""
-else
-	autores=$(DISPLAY=:0 xrandr | grep current | awk '{print $8$9$10}' | tr -d ,)
-fi
-if [ ! "$autores" = "1280x1024" ] && [ ! "$autores" = "" ]; then
-	export RESOLUTION=$autores
-	echo "$autores">$PREFIX/glibc/opt/last-resolution.conf
-elif [ -e $PREFIX/glibc/opt/last-resolution.conf ]; then
-	export RESOLUTION=$(cat $PREFIX/glibc/opt/last-resolution.conf)
-fi
-
-# Установка переменных окружения для PulseAudio и X11
-export PULSE_SERVER=127.0.0.1
-export DISPLAY=:0
-
-# Проверка, существует ли файл 86.jpg
-if [ -f "$HOME/86.jpg" ]; then
-# Запуск feh для просмотра изображения с заданным разрешением
-feh -Z -F "$HOME/86.jpg"
-else
-echo "Файл 86.jpg не найден в директории $HOME."
-fi &>/dev/null &
-
-
-    # Если box64 успешно распакован, выполняем chmod +x
-chmod +x "$PREFIX/glibc/bin/box64"
-chmod +x "$PREFIX/glibc/bin/box86"
-
-# Настройка прав для wine и wineserver
-chmod +x "$WINE_PATH/bin/wine" "$WINE_PATH/bin/wineserver"
-
-# Установка rpath и интерпретатора для box64
-patchelf --force-rpath --set-rpath "$PREFIX/glibc/lib" --set-interpreter "$PREFIX/glibc/lib/ld-linux-aarch64.so.1" "$PREFIX/glibc/bin/box64"
-
-# Удаление старых ссылок и создание новых
-rm -rf "$PREFIX/glibc/bin/wine" "$PREFIX/glibc/bin/wineserver"
-ln -sf "$WINE_PATH/bin/wine" "$PREFIX/glibc/bin/wine"
-ln -sf "$WINE_PATH/bin/wineserver" "$PREFIX/glibc/bin/wineserver"
-
-export GLIBC_BIN="$PREFIX/glibc/bin"
-unset LD_PRELOAD
-# первичная установка (вырезано)
-
-
-
-
-
-
-
-
-
-
-
-load_configs
-source "$PREFIX/mobox/set_game/$CONFIG_SETTINGS_GAME" &>/dev/null
-
-
-sleep 3
-ln -sf $(df -H | grep -o "/storage/....-....") "$WINEPREFIX/dosdevices/f:" &>/dev/null
-
-taskset -c $SECONDARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine64 start /min /unix $PREFIX/glibc/bin/ib.exe &>/dev/null &
-DISPLAY=:0 taskset -c $SECONDARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine64 start /min /unix $PREFIX/glibc/opt/apps/f5taskmgr.exe &>/dev/null &&
-if [ "$STARTUP_WINEDEVICE_MODE" = "0" ]; then
-        $GLIBC_BIN/box64 $GLIBC_BIN/wine taskkill /f /im services.exe &>/dev/null &
-fi
-
-
-DISPLAY=:0 LC_ALL=$(cat $PREFIX/glibc/opt/locale.conf) taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine64 start /min /unix $ORIGINAL_FILE >$LOG_PATH 2>&1 &&
-
-
-echo "Нажмите 1 для завершения"
-echo "$BOX64_DYNAREC_BIGBLOCK"
-echo "$BOX86_DYNAREC_BIGBLOCK x86 $BOX64_DYNAREC_X87DOUBLE"
-sleep 2
-pkill feh &>/dev/null &
-
-
-
-
-
-REBOOT=0
-while true; do
-if [ -e $PREFIX/glibc/opt/shutdown ]; then
-	rm -rf $PREFIX/glibc/opt/shutdown
-	$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
-	break
-fi
-if [ -e $PREFIX/glibc/opt/reboot ]; then
-	rm -rf $PREFIX/glibc/opt/reboot
-	$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
-	REBOOT=1
-	break
-fi
-read -t 3 i
-case "$i" in
-1)
-	$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
-	break
-;;
-esac
-
-
-
+            done
+            save_settings ;;  # Сохраняем настройки
+            
+            
+        8.) while true; do
+        # Ввод значения FPS
+        FPS_LIM_CHOICE=$(dialog --title "Выберите лимит FPS" --inputbox "Введите максимальное значение FPS кратное 5 (от 15 до 240 или 0):\n
+\n
+0 - без ограничения" 12 40 $FPS_LIM_WOW 2>&1 >/dev/tty)
+                case $? in
+                1) continue ;;  # Игнорируем отмену
+                esac
+                # Проверка, является ли введенное значение числом и находится ли оно в допустимом диапазоне
+                if [[ "$FPS_LIM_CHOICE" =~ ^[0-9]+$ ]] && [ "$FPS_LIM_CHOICE" -eq 0 ] || [ "$FPS_LIM_CHOICE" -ge 15 ] && [ "$FPS_LIM_CHOICE" -le 240 ]; 
+                then
+                # Проверка, кратно ли значение 5
+                if (( FPS_LIM_CHOICE % 5 == 0 )); then
+                FPS_LIM_WOW="$FPS_LIM_CHOICE"
+                break
+                else
+                dialog --msgbox "Ошибка: Пожалуйста, введите число, кратное 5." 10 30
+                fi
+                else
+                dialog --msgbox "Ошибка: Пожалуйста, введите число от 15 до 240 или 0." 10 30
+                fi
+            done
+            save_settings ;;  # Сохраняем настройки
+    esac
 done
 
-export LD_PRELOAD=/data/data/com.termux/files/usr/lib/libtermux-exec.so
-stop-all
-
-if [ "$REBOOT" = "1" ]; then
-	exec $0
-fi
-    
-
-
-
-
-elif [ "$BOX_VERS" == "WOW64" ]; then
-
-
-# Загрузка WoW64
-
-
-
-if [ -n "$value" ]; then
-echo
-        else
-        if [ -d "$PREFIX/glibc-wow64" ]; then
-                    mv $PREFIX/glibc $PREFIX/glibc-x86 || { echo "Ошибка при переименовании glibc"; exit 1; }
-                    mv $PREFIX/glibc-wow64 $PREFIX/glibc || { echo "Ошибка при переименовании glibc-wow64"; exit 1; }
-                    else 
-                    echo "Mobox WoW64 не установлен"
-                    exit 1
-                fi
-                fi
-am start --user 0 -n com.termux.x11/.MainActivity &>/dev/null
-sleep 1
-am start --user 0 -n com.termux.x11/.MainActivity &>/dev/null 
-
-# авто создание ярлыков
-. $PREFIX/mobox/link-kreator $HOME 2>&1 &
-
-
-cd
-mkdir -p /sdcard/Android/data/com.termux/files/Download
-mkdir -p /sdcard/moboxtrace
-#загружает дэфолтный конфиг 
-. $PREFIX/mobox/set_game/$CONFIG_SETTINGS_GAME &>/dev/null
-
-#загружает настройки mobox
-. $PREFIX/mobox/configs
-. $PREFIX/glibc/opt/conf/path.conf &>/dev/null
-. $PREFIX/glibc/opt/conf/cores.conf &>/dev/null
-. $PREFIX/glibc/opt/conf/force_compatibility.conf &>/dev/null
-. $PREFIX/glibc/opt/scripts/configs &>/dev/null
-. $PREFIX/mobox/cleaner_links &>/dev/null
-
-load_configs
-
-
-# Установка (turnip, dxvk, box64-86)
-# Подключаем настройки игры
-source "$PREFIX/mobox/set_game/$CONFIG_SETTINGS_GAME" &>/dev/null
-CORES_CONFIG_FILE=$PREFIX/glibc/opt/conf/cores.conf
-DXVK_CONFIG_FILE=$PREFIX/glibc/opt/dxvk.conf
-# Переименование переменных
-export BOX64_DYNAREC_ALIGNED_ATOMICS=$BOX64_DYNAREC_ALIGNED_ATOMICS_WOW
-export BOX64_DYNAREC_BIGBLOCK=$BOX64_DYNAREC_BIGBLOCK_WOW
-export BOX64_DYNAREC_FASTMAN=$BOX64_DYNAREC_FASTMAN_WOW
-export BOX64_DYNAREC_SAFEFLAGS=$BOX64_DYNAREC_SAFEFLAGS_WOW
-export BOX64_DYNAREC_STRONGMEM=$BOX64_DYNAREC_STRONGMEM_WOW
-export BOX64_DYNAREC_WAIT=$BOX64_DYNAREC_WAIT_WOW
-export BOX64_DYNAREC_X87DOUBLE=$BOX64_DYNAREC_X87DOUBLE_WOW
-export BOX64_DYNAREC_CALLRET=$BOX64_DYNAREC_CALLRET_WOW
-export BOX64_DYNAREC_FASTROUND=$BOX64_DYNAREC_FASTROUND_WOW
-export BOX64_IGNOREINT3=$BOX64_IGNOREINT3_WOW
-export RESOLUTION=$RESOLUTION_WOW
-
-
-
-
-function stop-all {
-	pkill -f "app_process / com.termux.x11"
-	rm -rf $PREFIX/tmp/pulse-*
-	pulseaudio -k &>/dev/null
-	unset PULSE_SERVER
-	pkill pulseaudio
-	rm -rf $PREFIX/tmp/.virgl_test &>/dev/null
-	pkill virgl
-	rm -rf $PREFIX/tmp/.virgl_test &>/dev/null
-}
-stop-all 
-if [ -e $PREFIX/glibc/opt/virgl/virgl-enabled ]; then
-	chmod +x $PREFIX/glibc/opt/virgl/libvirgl_test_server.so
-	TMPDIR=$PREFIX/tmp $PREFIX/glibc/opt/virgl/libvirgl_test_server.so &>/dev/null &
-fi
-pulseaudio --start --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" --exit-idle-time=-1
-termux-x11 :0 &>/dev/null &
-sleep 1
-if [ -e $PREFIX/glibc/opt/virgl/virgl-enabled ]; then
-	chmod 777 $PREFIX/tmp/.virgl_test
-fi
-export RESOLUTION=1280x1024
-if [ "$STARTUP_COMPATIBILITY_MODE" = "1" ]; then
-	autores=""
-else
-	autores=$(DISPLAY=:0 xrandr | grep current | awk '{print $8$9$10}' | tr -d ,)
-fi
-if [ ! "$autores" = "1280x1024" ] && [ ! "$autores" = "" ]; then
-	export RESOLUTION=$autores
-	echo "$autores">$PREFIX/glibc/opt/last-resolution.conf
-elif [ -e $PREFIX/glibc/opt/last-resolution.conf ]; then
-	export RESOLUTION=$(cat $PREFIX/glibc/opt/last-resolution.conf)
-fi
-
-
-# Проверка, существует ли файл game86.jpg
-if [ -f "$HOME/game64.jpg" ]; then
-# Запуск feh для просмотра изображения с заданным разрешением
-feh -Z -F "$HOME/game64.jpg"
-else
-echo "Файл game64.jpg не найден в директории $HOME."
-fi &>/dev/null &
-
-if [ "$FPS_LIM_WOW" ]; then
-    sed -i "4s/.*/dxgi.maxFrameRate = \"$FPS_LIM_WOW\"/" "$DXVK_CONFIG_FILE"
-    sed -i "5s/.*/d3d9.maxFrameRate = \"$FPS_LIM_WOW\"/" "$DXVK_CONFIG_FILE"
-fi
-
-if [ "$DX_VER_WOW" ]; then
-    sed -i "3s/.*/d3d11.maxFeatureLevel = \"$DX_VER_WOW\"/" "$DXVK_CONFIG_FILE"
-    
-fi
-if [ "$CORES_WOW" ]; then
-    sed -i "1s/.*/export PRIMARY_CORES=\"$PRIMARY_WOW\"/" "$CORES_CONFIG_FILE"
-    sed -i "2s/.*/export SECONDARY_CORES=\"$SECONDARY_WOW\"/" "$CORES_CONFIG_FILE"
-fi
-
-# Путь к папке драйверов
-DRIVERS_DIR="$PREFIX/mobox/drivers"
-
-# Замените на реальное имя файла
-DXVK_FILE="$DRIVERS_DIR/dxvk$DXVK_WOW.zip"
-TURNIP_FILE="$DRIVERS_DIR/turnip$TURNIP_WOW.zip"
-BOX64_FILE="$DRIVERS_DIR/box$BOX64_86.zip"
-
-# Проверяем наличие dxvk-файла
-if [ -e "$DXVK_FILE" ]; then
-    # Подключаем конфигурацию
-    source "$PREFIX/glibc/opt/conf/wine_path.conf" &>/dev/null
-    
-    # Распаковываем dxvk-файл в нужную директорию
-    unzip -o "$DXVK_FILE" -d "$WINE_PATH/.wine/drive_c"
-else
-    echo "Файл $DXVK_FILE не найден."
-fi
-
-# Проверяем наличие turnip-файла
-if [ -e "$TURNIP_FILE" ]; then
-    # Распаковываем turnip-файл в нужную директорию
-    unzip -o "$TURNIP_FILE" -d "$PREFIX/glibc"
-else
-    echo "Файл $TURNIP_FILE не найден."
-fi
-
-chmod +x $PREFIX/glibc/bin/box64
-chmod +x $WINE_PATH/bin/{wine,wineserver}
-patchelf --force-rpath --set-rpath $PREFIX/glibc/lib --set-interpreter $PREFIX/glibc/lib/ld-linux-aarch64.so.1 $PREFIX/glibc/bin/box64
-rm -rf $PREFIX/glibc/bin/{wine,wineserver}
-ln -sf $WINE_PATH/bin/wine $PREFIX/glibc/bin/wine
-ln -sf $WINE_PATH/bin/wineserver $PREFIX/glibc/bin/wineserver
-
-export GLIBC_BIN=$PREFIX/glibc/bin
-unset LD_PRELOAD
-
-if [ ! -e $WINEPREFIX/.update-timestamp ]; then
-	echo "Configuring $WINEPREFIX. This may take a few minutes"
-	rm -rf $WINEPREFIX
-	unset BOX64_DYNAREC_BIGBLOCK
-	unset WINEESYNC
-	unset WINEESYNC_TERMUX
-	unset BOX64_DYNAREC_CALLRET
-	if [ -e $WINE_PATH/lib/wine/i386-windows/shell32-bak.dll ] || [ -e $WINE_PATH/lib64/wine/x86_64-windows/shell32-bak.dll ]; then
-		mv $WINE_PATH/lib/wine/i386-windows/shell32-bak.dll $WINE_PATH/lib/wine/i386-windows/shell32.dll &>/dev/null
-		mv $WINE_PATH/lib/wine/x86_64-windows/shell32-bak.dll $WINE_PATH/lib/wine/x86_64-windows/shell32.dll &>/dev/null
-		mv $WINE_PATH/lib64/wine/x86_64-windows/shell32-bak.dll $WINE_PATH/lib64/wine/x86_64-windows/shell32.dll &>/dev/null
-		mv $WINE_PATH/lib64/wine/i386-windows/shell32-bak.dll $WINE_PATH/lib64/wine/i386-windows/shell32.dll &>/dev/null
-	fi
-
-	WINEDLLOVERRIDES="winegstreamer=disabled,mscoree=disabled" taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine wineboot -u >${LOG_PATH}_wineboot.txt 2>&1
-	## DISPLAY=:0 $GLIBC_BIN/box64 $GLIBC_BIN/wine explorer /desktop=shell,$RESOLUTION winecfg
-	if [ ! -e $WINEPREFIX/.update-timestamp ]; then
-		echo "Cannot configure. See ${LOG_PATH}_wineboot.txt"
-		$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
-		export LD_PRELOAD=/data/data/com.termux/files/usr/lib/libtermux-exec.so
-		rm -rf $PREFIX/tmp/pulse-*
-		pulseaudio -k &>/dev/null
-		pkill -f pulseaudio
-		pkill -f "app_process / com.termux.x11"
-		sleep 5
-		exit
-	fi
-
-	echo "disable">$WINEPREFIX/.update-timestamp
-	7z x $PREFIX/glibc/opt/prefix/drive_c.7z -o$WINEPREFIX/drive_c -y &>/dev/null
-	echo "Installing DirectX"
-	7z x $PREFIX/glibc/opt/prefix/directx.7z -o$WINEPREFIX/drive_c -y &>/dev/null
-	echo "Installing Start Menu shortcuts"
-	cp -r $PREFIX/glibc/opt/prefix/start/* "$WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start Menu"
-	rm -rf "$WINEPREFIX/dosdevices/z:"
-	ln -sf /data/data/com.termux/files "$WINEPREFIX/dosdevices/z:"
-	ln -sf /sdcard/Download "$WINEPREFIX/dosdevices/d:"
-	ln -sf /sdcard/Android/data/com.termux/files/Download "$WINEPREFIX/dosdevices/e:"
-	echo "Installing registry tweaks"
-	cp $PREFIX/glibc/opt/prefix/marlett.ttf $WINEPREFIX/drive_c/windows/Fonts
-	taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine regedit $PREFIX/glibc/opt/prefix/user.reg &>/dev/null
-	taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine regedit $PREFIX/glibc/opt/prefix/system.reg &>/dev/null
-	mkdir -p "$WINEPREFIX/moboxmeta"
-	taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine regedit $PREFIX/glibc/opt/prefix/fix-services.reg &>/dev/null
-	touch $WINEPREFIX/moboxmeta/services-fix-applied
-	tar -xf $PREFIX/glibc/opt/prefix/fix-fonts.tar.xz -C $WINEPREFIX/drive_c/windows
-	touch $WINEPREFIX/moboxmeta/fonts-fix-applied
-	touch $WINEPREFIX/moboxmeta/dxdlls-fix-applied
-
-	if [ ! "$STARTUP_COMPATIBILITY_MODE" = "1" ]; then
-		echo "Installing PhysX 9.10, 7-Zip, Visual C++ Redistributable"
-		DISPLAY=:0 taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine explorer /desktop=shell,640x480 cmd /c "start Z:\\usr\\glibc\\opt\\apps\\install.bat" >${LOG_PATH}_redist.txt 2>&1
-		if [ ! -e $PREFIX/glibc/opt/virgl/virgl-enabled ]; then
-			sleep 1
-			echo "Installing dxvk-async-1.10.3"
-		DISPLAY=:0 taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine explorer /desktop=shell,640x480 cmd /c "cd Z:\\usr\\glibc\\opt\\prefix\\d3d && start Z:\\usr\\glibc\\opt\\prefix\\d3d\\dxvk-async-1.10.3.bat" &>/dev/null
-			sleep 1
-			echo "Installing turnip-v6.5"
-			DISPLAY=:0 taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine explorer /desktop=shell,640x480 cmd /c "cd Z:\\usr\\glibc\\opt\\prefix\\mesa && start Z:\\usr\\glibc\\opt\\prefix\\mesa\\turnip-v6.5.bat" &>/dev/null
-		else
-			sleep 1
-			echo "Installing wined3d-8.0.2"
-			DISPLAY=:0 taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine explorer /desktop=shell,640x480 cmd /c "cd Z:\\usr\\glibc\\opt\\prefix\\d3d && start Z:\\usr\\glibc\\opt\\prefix\\d3d\\wined3d-8.0.2.bat" &>/dev/null
-		fi
-	fi
-	sleep 3
-	
-	if [ -e $WINE_PATH/lib/wine/i386-unix/libwine.so.1 ] || [ -e $WINE_PATH/lib64/wine/x86_64-unix/libwine.so.1 ]; then
-		mv $WINE_PATH/lib/wine/i386-windows/shell32.dll $WINE_PATH/lib/wine/i386-windows/shell32-bak.dll &>/dev/null
-		mv $WINE_PATH/lib/wine/x86_64-windows/shell32.dll $WINE_PATH/lib/wine/x86_64-windows/shell32-bak.dll &>/dev/null
-		mv $WINE_PATH/lib64/wine/x86_64-windows/shell32.dll $WINE_PATH/lib64/wine/x86_64-windows/shell32-bak.dll &>/dev/null
-		mv $WINE_PATH/lib64/wine/i386-windows/shell32.dll $WINE_PATH/lib64/wine/i386-windows/shell32-bak.dll &>/dev/null
-	else
-		rm -rf $WINE_PATH/lib/wine/i386-unix/shell32.dll.so &>/dev/null
-		rm -rf $WINE_PATH/lib/wine/x86_64-unix/shell32.dll.so &>/dev/null
-		rm -rf $WINE_PATH/lib64/wine/x86_64-unix/shell32.dll.so &>/dev/null
-		rm -rf $WINE_PATH/lib64/wine/i386-unix/shell32.dll.so &>/dev/null
-	fi
-	$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
-fi
-
-if ! ls $PREFIX/glibc/opt/prefix/start/Registry/2.* &>/dev/null; then
-	cp -r $PREFIX/glibc/opt/prefix/start/Registry/2.* $WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start\ Menu/Registry
-fi
-
-rm -rf "$WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start Menu/Install/media foundation (for RE)"
-
-if [ ! -e "$WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start Menu/Install/media foundation (for RE).lnk" ]; then
-	cp "$PREFIX/glibc/opt/prefix/start/Install/media foundation (for RE).lnk" "$WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start Menu/Install"
-fi
-
-rm -rf $PREFIX/glibc/opt/prefix/start-default
-
-rm -d $PREFIX/glibc/opt/prefix/start/Install/1.* &>/dev/null
-rm -d $PREFIX/glibc/opt/prefix/start/Install/2.* &>/dev/null
-rm -d $WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start\ Menu/Install/1.* &>/dev/null
-rm -d $WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start\ Menu/Install/2.* &>/dev/null
-
-if ls $PREFIX/glibc/opt/prefix/start/Install/1.* &>/dev/null && ls $WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start\ Menu/Install/1.* &>/dev/null; then
-	rm -rf $WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start\ Menu/Install/1.*/* &>/dev/null
-	cp $PREFIX/glibc/opt/prefix/start/Install/1.*/* $WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start\ Menu/Install/1.* &>/dev/null
-fi
-
-if ls $PREFIX/glibc/opt/prefix/start/Install/2.* &>/dev/null && ls $WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start\ Menu/Install/2.* &>/dev/null; then
-	rm -rf $WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start\ Menu/Install/2.*/* &>/dev/null
-	cp $PREFIX/glibc/opt/prefix/start/Install/2.*/* $WINEPREFIX/drive_c/ProgramData/Microsoft/Windows/Start\ Menu/Install/2.* &>/dev/null
-fi
-
-mkdir -p $WINEPREFIX/moboxmeta
-if [ ! -f $WINEPREFIX/moboxmeta/services-fix-applied ]; then
-	echo "Applying services fix"
-	taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine regedit $PREFIX/glibc/opt/prefix/fix-services.reg &>/dev/null
-	sleep 5
-	$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
-	touch $WINEPREFIX/moboxmeta/services-fix-applied
-fi
-if [ ! -f $WINEPREFIX/moboxmeta/fonts-fix-applied ]; then
-	echo "Applying fonts fix"
-	tar -xf $PREFIX/glibc/opt/prefix/fix-fonts.tar.xz -C $WINEPREFIX/drive_c/windows
-	touch $WINEPREFIX/moboxmeta/fonts-fix-applied
-fi
-if [ ! -f $WINEPREFIX/moboxmeta/dxdlls-fix-applied ]; then
-	echo "Applying dlls fix"
-	7z x $PREFIX/glibc/opt/prefix/directx.7z -o$WINEPREFIX/drive_c -y &>/dev/null
-	taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine regedit $PREFIX/glibc/opt/prefix/user.reg &>/dev/null
-	sleep 5
-	$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
-	touch $WINEPREFIX/moboxmeta/dxdlls-fix-applied
-fi
-
-load_configs
-# Переименование переменных
-export BOX64_DYNAREC_ALIGNED_ATOMICS=$BOX64_DYNAREC_ALIGNED_ATOMICS_WOW
-export BOX64_DYNAREC_BIGBLOCK=$BOX64_DYNAREC_BIGBLOCK_WOW
-export BOX64_DYNAREC_FASTNAN=$BOX64_DYNAREC_FASTNAN_WOW
-export BOX64_DYNAREC_SAFEFLAGS=$BOX64_DYNAREC_SAFEFLAGS_WOW
-export BOX64_DYNAREC_STRONGMEM=$BOX64_DYNAREC_STRONGMEM_WOW
-export BOX64_DYNAREC_WAIT=$BOX64_DYNAREC_WAIT_WOW
-export BOX64_DYNAREC_X87DOUBLE=$BOX64_DYNAREC_X87DOUBLE_WOW
-export BOX64_DYNAREC_CALLRET=$BOX64_DYNAREC_CALLRET_WOW
-export BOX64_DYNAREC_FASTROUND=$BOX64_DYNAREC_FASTROUND_WOW
-export BOX64_IGNOREINT3=$BOX64_IGNOREINT3_WOW
-export RESOLUTION=$RESOLUTION_WOW
-export PULSE_SERVER=127.0.0.1
-
-
-    # Если значение "off", запускаем 
-    ln -sf $(df -H | grep -o "/storage/....-....") "$WINEPREFIX/dosdevices/f:" &>/dev/null
-taskset -c $SECONDARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine start /min /unix $PREFIX/glibc/bin/ib.exe &>/dev/null &
-DISPLAY=:0 taskset -c $SECONDARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine start /min /unix $PREFIX/glibc/opt/apps/f5taskmgr.exe &>/dev/null &&
-if [ "$STARTUP_WINEDEVICE_MODE" = "0" ]; then
-	$GLIBC_BIN/box64 $GLIBC_BIN/wine taskkill /f /im services.exe &>/dev/null &
-fi
-DISPLAY=:0 LC_ALL=$(cat $PREFIX/glibc/opt/locale.conf) taskset -c $PRIMARY_CORES $GLIBC_BIN/box64 $GLIBC_BIN/wine start /min /unix $ORIGINAL_FILE &>$LOG_PATH 2>&1 &&
-
-
-am start --user 0 -n com.termux.x11/.MainActivity &>/dev/null
-
-echo "Нажмите 1 для завершения"
-echo "$BOX64_DYNAREC_FASTNAN g $BOX64_DYNAREC_X87DOUBLE"
-sleep 2
-pkill feh &>/dev/null &
-
-
-REBOOT=0
-while true; do
-if [ -e $PREFIX/glibc/opt/shutdown ]; then
-	rm -rf $PREFIX/glibc/opt/shutdown
-	$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
-	break
-fi
-if [ -e $PREFIX/glibc/opt/reboot ]; then
-	rm -rf $PREFIX/glibc/opt/reboot
-	$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
-	REBOOT=1
-	break
-fi
-read -t 3 i
-case "$i" in
-1)
-	$GLIBC_BIN/box64 $GLIBC_BIN/wineserver -k &>/dev/null
-	break
-;;
-esac
-done
-
-export LD_PRELOAD=/data/data/com.termux/files/usr/lib/libtermux-exec.so
-stop-all
-
-if [ "$REBOOT" = "1" ]; then
-	exec $0
-fi
-else
-echo "Mobox Wow64 не установлен"
-exit 1
-fi
+. $HOME/.shortcuts/,/3-Настройки-игр-из-списка 
