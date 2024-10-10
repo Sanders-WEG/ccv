@@ -1,623 +1,273 @@
-#!/bin/bash
-clear
-
-# Пример переменных настроек
-result="${CONFIG_GAME%.lnk}"
-echo "$result"
-CONFIG="$PREFIX/mobox/set_game/$CONFIG_GAME"
-source "$CONFIG"
-
-save_settings() {
-        local settings=(
-        "$ATOMICS_64"
-        "$ATOMICS_86"
-        "$BIGS_64"
-        "$BIGS_86"
-        "$FAST_64"
-        "$FAST_86"
-        "$SAF_64"
-        "$SAF_86"
-        "$STRONG_64"
-        "$STRONG_86"
-        "$WAIT_64"
-        "$WAIT_86"
-        "$X87DOUBLE_64"
-        "$X87DOUBLE_86"
-        "$CALL_64"
-        "$CALL_86"
-        "TURNIP=$TURNIP"
-        "DXVK=$DXVK"
-        "DESKTOP_SHELL=$DESKTOP_SHELL"
-        "CORES=$CORES"
-        "PRIMARY=$PRIMARY"
-        "SECONDARY=$SECONDARY"
-        "FPS_LIM=$FPS_LIM"
-        "DX_VER=$DX_VER"
-        "RESOLUTION=$RESOLUTION"
-
-        "$ATOMICS_WOW"
-        "$BIGS64_WOW"
-        "$FASTMAN_WOW"
-        "$SAFEFLAGS_WOW"
-        "$STRONGMEM_WOW"
-        "$WAIT_WOW"
-        "$X87DOUBLE_WOW"
-        "$CALLRET_WOW"
-        "$FASTROUND_WOW"
-        "$IGNOREINT3_WOW"
-        "TURNIP_WOW=$TURNIP_WOW"
-        "DXVK_WOW=$DXVK_WOW"
-        "DESKTOP_SHELL_WOW=$DESKTOP_SHELL_WOW"
-        "CORES_WOW=$CORES_WOW"
-        "PRIMARY_WOW=$PRIMARY_WOW"
-        "SECONDARY_WOW=$SECONDARY_WOW"
-        "FPS_LIM_WOW=$FPS_LIM_WOW"
-        "DX_VER_WOW=$DX_VER_WOW"
-        "RESOLUTION_WOW=$RESOLUTION_WOW"
-
-        "ALIGNED_ATOMICS=$ALIGNED_ATOMICS"
-        "BIGBLOCK_64=$BIGBLOCK_64"
-        "BIGBLOCK_86=$BIGBLOCK_86"
-        "FASTNAN=$FASTNAN"
-        "SAFEFLAGS=$SAFEFLAGS"
-        "STRONGMEM=$STRONGMEM"
-        "WAIT=$WAIT"
-        "X87DOUBLE=$X87DOUBLE"
-        "CALLRET=$CALLRET"
-
-    "BOX64_DYNAREC_ALIGNED_ATOMICS_WOW=$BOX64_DYNAREC_ALIGNED_ATOMICS_WOW"
-        "BOX64_DYNAREC_BIGBLOCK_WOW=$BOX64_DYNAREC_BIGBLOCK_WOW"
-        "BOX64_DYNAREC_FASTNAN_WOW=$BOX64_DYNAREC_FASTNAN_WOW"
-        "BOX64_DYNAREC_SAFEFLAGS_WOW=$BOX64_DYNAREC_SAFEFLAGS_WOW"
-        "BOX64_DYNAREC_STRONGMEM_WOW=$BOX64_DYNAREC_STRONGMEM_WOW"
-        "BOX64_DYNAREC_WAIT_WOW=$BOX64_DYNAREC_WAIT_WOW"
-        "BOX64_DYNAREC_X87DOUBLE_WOW=$BOX64_DYNAREC_X87DOUBLE_WOW"
-        "BOX64_DYNAREC_CALLRET_WOW=$BOX64_DYNAREC_CALLRET_WOW"
-        "BOX64_DYNAREC_FASTROUND_WOW=$BOX64_DYNAREC_FASTROUND_WOW"
-        "BOX64_IGNOREINT3_WOW=$BOX64_IGNOREINT3_WOW"
-
-        "BOX_VERS=$BOX_VERS"
-    )
-
-    printf "%s\n" "${settings[@]}" > "$CONFIG"
-}
-
-handle_dynarec_choice() {
-    local choice="$1"
-    case "$choice" in
-        1) 
-            # Переключение настройки выравнивания атомарных операций
-case $ALIGNED_ATOMICS in
-            0) ALIGNED_ATOMICS=1 
-        ATOMICS_64="export BOX64_DYNAREC_ALIGNED_ATOMICS=1"
-        ATOMICS_86="export BOX86_DYNAREC_ALIGNED_ATOMICS=1";;
-            1) ATOMICS_64="unset BOX64_DYNAREC_ALIGNED_ATOMICS"
-        ATOMICS_86="unset BOX86_DYNAREC_ALIGNED_ATOMICS"
-        ALIGNED_ATOMICS="-"
-        ;;
-        *) ALIGNED_ATOMICS=0 
-        ATOMICS_64="export BOX64_DYNAREC_ALIGNED_ATOMICS=0"
-        ATOMICS_86="export BOX86_DYNAREC_ALIGNED_ATOMICS=0";;
-            esac
-            echo "Выравнивание атомарных операций отключено."
-            ;;
-        2) 
-            # Циклическое изменение BIGBLOCK для BOX64
-            case $BIGBLOCK_64 in
-                0) BIGBLOCK_64=1 
-            BIGS_64="export BOX64_DYNAREC_BIGBLOCK=1" ;;
-                1) BIGBLOCK_64=2 
-            BIGS_64="export BOX64_DYNAREC_BIGBLOCK=2" ;;
-                2) 
-            BIGS_64="unset BOX64_DYNAREC_BIGBLOCK" BIGBLOCK_64="-"
-                ;;
-                *) BIGBLOCK_64=0 
-            BIGS_64="export BOX86_DYNAREC_BIGBLOCK=0" ;;
-            esac
-            echo "BIGBLOCK для BOX64 изменен на "
-            ;;
-            
-        3) 
-            # Циклическое изменение BIGBLOCK для BOX86
-            case $BIGBLOCK_86 in
-                0) BIGBLOCK_86=1 
-            BIGS_86="export BOX86_DYNAREC_BIGBLOCK=1";;
-                1) BIGBLOCK_86=2 
-            BIGS_86="export BOX86_DYNAREC_BIGBLOCK=2";;
-                2) BIGBLOCK_86="-"
-            BIGS_86="unset BOX86_DYNAREC_BIGBLOCK";;
-                *) BIGBLOCK_86=0 
-            BIGS_86="export BOX86_DYNAREC_BIGBLOCK=0";;
-            esac
-            echo "BIGBLOCK для BOX86 изменен на "
-            ;;
-        4) 
-            # Переключение FASTNAN
-            case $FASTNAN in
-                0) FASTNAN=1
-            FAST_64="export BOX64_DYNAREC_FASTMAN=1"
-            FAST_86="export BOX86_DYNAREC_FASTMAN=1";;
-                1) FASTNAN="-"
-            FAST_64="unset BOX64_DYNAREC_FASTMAN"
-            FAST_86="unset BOX86_DYNAREC_FASTMAN";;
-                *) FASTNAN=0
-            FAST_64="export BOX64_DYNAREC_FASTMAN=0"
-            FAST_86="export BOX86_DYNAREC_FASTMAN=0";;
-            esac
-            echo "FASTNAN теперь ${BOX64_DYNAREC_FASTNAN}."
-            ;;
-        5) 
-            # Переключение SAFEFLAGS
-            case $SAFEFLAGS in
-                0) SAFEFLAGS=1
-            SAF_64="export BOX64_DYNAREC_SAFEFLAGS=1"
-            SAF_86="export BOX86_DYNAREC_SAFEFLAGS=1";;
-                1) SAFEFLAGS=2
-            SAF_64="export BOX64_DYNAREC_SAFEFLAGS=2" 
-            SAF_86="export BOX86_DYNAREC_SAFEFLAGS=2";;
-                2) SAFEFLAGS="-"
-            SAF_64="unset BOX64_DYNAREC_SAFEFLAGS"
-            SAF_86="unset BOX64_DYNAREC_SAFEFLAGS";;
-                *) SAFEFLAGS=0
-            SAF_64="export BOX64_DYNAREC_SAFEFLAGS=0" 
-            SAF_86="export BOX86_DYNAREC_SAFEFLAGS=0";;
-            esac
-            echo "SAFEFLAGS теперь ${BOX64_DYNAREC_SAFEFLAGS}."
-            ;;
-        6) 
-            # Переключение STRONGMEM
-            case $STRONGMEM in
-                0) STRONGMEM=1
-                STRONG_64="export BOX64_DYNAREC_STRONGMEM=1"
-                STRONG_86="export BOX86_DYNAREC_STRONGMEM=1";;
-                1) STRONGMEM=2
-            STRONG_64="export BOX64_DYNAREC_STRONGMEM=2"
-            STRONG_86="export BOX86_DYNAREC_STRONGMEM=2";;
-                2) STRONGMEM=3
-            STRONG_64="export BOX64_DYNAREC_STRONGMEM=3"
-            STRONG_86="export BOX86_DYNAREC_STRONGMEM=3";;
-                3) STRONGMEM="-"
-            STRONG_64="unset BOX64_DYNAREC_STRONGMEM"
-            STRONG_86="unset BOX86_DYNAREC_STRONGMEM";;
-                *) STRONGMEM=0
-            STRONG_64="export BOX64_DYNAREC_STRONGMEM=0"
-            STRONG_86="export BOX86_DYNAREC_STRONGMEM=0";;
-            esac
-            echo "STRONGMEM теперь ${BOX64_DYNAREC_STRONGMEM}."
-            ;;
-        7) 
-            # Переключение WAIT
-            case $WAIT in
-                0) WAIT=1
-            WAIT_64="export BOX64_DYNAREC_WAIT=1"
-            WAIT_86="export BOX86_DYNAREC_WAIT=1";;
-                1)  WAIT="-"
-            WAIT_64="unset BOX64_DYNAREC_WAIT"
-            WAIT_86="unset BOX86_DYNAREC_WAIT";;
-                *)  WAIT=0
-            WAIT_64="export BOX64_DYNAREC_WAIT=0"
-            WAIT_86="export BOX86_DYNAREC_WAIT=0";;
-            esac
-            echo "WAIT теперь ${BOX64_DYNAREC_WAIT}."
-            ;;
-        8) 
-            # Переключение X87DOUBLE
-            case $X87DOUBLE in
-                0) X87DOUBLE=1
-            X87DOUBLE_64="export BOX64_DYNAREC_X87DOUBLE=1"
-            X87DOUBLE_86="export BOX86_DYNAREC_X87DOUBLE=1";;
-                1) X87DOUBLE="-"
-            X87DOUBLE_64="unset BOX64_DYNAREC_X87DOUBLE"
-            X87DOUBLE_86="unset BOX86_DYNAREC_X87DOUBLE";;
-                *) X87DOUBLE=0
-            X87DOUBLE_64="export BOX64_DYNAREC_X87DOUBLE=0"
-            X87DOUBLE_86="export BOX86_DYNAREC_X87DOUBLE=0";;
-            esac
-            echo "X87DOUBLE теперь ${BOX64_DYNAREC_X87DOUBLE}."
-            ;;
-        9) 
-            # Переключение CALLRET
-            case $CALLRET in
-                0) CALLRET=1
-            CALL_64="export BOX64_DYNAREC_CALLRET=1"
-            CALL_86="export BOX86_DYNAREC_CALLRET=1";;
-                1) CALLRET="-"
-            CALL_64="unset BOX64_DYNAREC_CALLRET"
-            CALL_86="unset BOX86_DYNAREC_CALLRET";;
-                *) CALLRET=0
-            CALL_64="export BOX64_DYNAREC_CALLRET=0"
-            CALL_86="export BOX86_DYNAREC_CALLRET=0";;
-            esac
-            echo "CALLRET теперь ${BOX64_DYNAREC_CALLRET}."
-            ;;
-        10) reset_dynarec_defaults
-            BOX64_DYNAREC_ALIGNED_ATOMICS=
-            ALIGNED_ATOMICS="-"
-            BOX64_DYNAREC_BIGBLOCK=2
-            BIGBLOCK_64="2"
-            BOX86_DYNAREC_BIGBLOCK=0
-            BIGBLOCK_86="0"
-            BOX64_DYNAREC_FASTNAN=
-            FASTNAN="-"
-            BOX64_DYNAREC_SAFEFLAGS=2
-            SAFEFLAGS="2"
-            BOX64_DYNAREC_STRONGMEM=
-            STRONGMEM="-"
-            BOX64_DYNAREC_WAIT=
-            WAIT="-"
-            BOX64_DYNAREC_X87DOUBLE=1
-            X87DOUBLE="1"
-            BOX64_DYNAREC_CALLRET=0
-            CALLRET="0"
-            ;;
-
-        1.) 
-            # Переключение настройки выравнивания атомарных операций
-case $BOX64_DYNAREC_ALIGNED_ATOMICS_WOW in
-        0) BOX64_DYNAREC_ALIGNED_ATOMICS_WOW=1 
-        ATOMICS_WOW="1";;
-        1) ATOMICS_WOW="-"
-        unset BOX64_DYNAREC_ALIGNED_ATOMICS_WOW
-        ;;
-        *) BOX64_DYNAREC_ALIGNED_ATOMICS_WOW=0 
-        ATOMICS_WOW="0";;
-            esac
-            echo "Выравнивание атомарных операций отключено."
-            ;;
-        2.) 
-            # Циклическое изменение BIGBLOCK для BOX64
-            case $BOX64_DYNAREC_BIGBLOCK_WOW in
-                0) BOX64_DYNAREC_BIGBLOCK_WOW=1 
-                BIGS64_WOW="1";;
-                1) BOX64_DYNAREC_BIGBLOCK_WOW=2 
-                BIGS64_WOW="2";;
-                2) BIGS64_WOW="-"
-                unset BOX64_DYNAREC_BIGBLOCK_WOW ;;
-                *) BOX64_DYNAREC_BIGBLOCK_WOW=0 
-                BIGS64_WOW="0";;
-            esac
-            echo "BIGBLOCK для BOX64 изменен на $BOX64_DYNAREC_BIGBLOCK_WOW."
-            ;;
-        3.) 
-            # Переключение FASTNAN_WOW
-            case $BOX64_DYNAREC_FASTNAN_WOW in
-                0) BOX64_DYNAREC_FASTNAN_WOW=1 
-                FASTMAN_WOW="1";;
-                1) 
-                FASTMAN_WOW="-"
-                unset BOX64_DYNAREC_FASTNAN_WOW ;;
-                *) BOX64_DYNAREC_FASTNAN_WOW=0 
-                FASTMAN_WOW="0";;
-            esac
-            echo "FASTNAN_WOW теперь ${BOX64_DYNAREC_FASTNAN_WOW}."
-            ;;
-        4.) 
-            # Переключение SAFEFLAGS_WOW
-            case $BOX64_DYNAREC_SAFEFLAGS_WOW in
-                0) BOX64_DYNAREC_SAFEFLAGS_WOW=1 
-                SAFEFLAGS_WOW="1";;
-                1) BOX64_DYNAREC_SAFEFLAGS_WOW=2 
-                SAFEFLAGS_WOW="2";;
-                2) 
-                SAFEFLAGS_WOW="-"
-                unset BOX64_DYNAREC_SAFEFLAGS_WOW ;;
-                *) BOX64_DYNAREC_SAFEFLAGS_WOW=0 
-                SAFEFLAGS_WOW="0";;
-            esac
-            echo "SAFEFLAGS_WOW теперь ${BOX64_DYNAREC_SAFEFLAGS_WOW}."
-            ;;
-        5.) 
-            # Переключение STRONGMEM_WOW
-            case $BOX64_DYNAREC_STRONGMEM_WOW in
-                0) BOX64_DYNAREC_STRONGMEM_WOW=1 
-                STRONGMEM_WOW="1";;
-                1) BOX64_DYNAREC_STRONGMEM_WOW=2 
-                STRONGMEM_WOW="2";;
-                2) BOX64_DYNAREC_STRONGMEM_WOW=3 
-                STRONGMEM_WOW="3";;
-                3) 
-                STRONGMEM_WOW="-"
-                unset BOX64_DYNAREC_STRONGMEM_WOW ;;
-                *) BOX64_DYNAREC_STRONGMEM_WOW=0 
-                STRONGMEM_WOW="0";;
-            esac
-            echo "STRONGMEM_WOW теперь ${BOX64_DYNAREC_STRONGMEM_WOW}."
-            ;;
-        6.) 
-            # Переключение WAIT_WOW
-            case $BOX64_DYNAREC_WAIT_WOW in
-                0) BOX64_DYNAREC_WAIT_WOW=1 
-                WAIT_WOW="1";;
-                1) 
-                WAIT_WOW="-"
-                unset BOX64_DYNAREC_WAIT_WOW ;;
-                *) BOX64_DYNAREC_WAI_WOWT=0 
-                WAIT_WOW="0";;
-            esac
-            echo "WAIT теперь ${BOX64_DYNAREC_WAIT_WOW}."
-            ;;
-        7.) 
-            # Переключение X87DOUBLE_WOW
-            case $BOX64_DYNAREC_X87DOUBLE_WOW in
-                0) BOX64_DYNAREC_X87DOUBLE_WOW=1 
-                X87DOUBLE_WOW="1";;
-                1) 
-                X87DOUBLE_WOW="-"
-                unset BOX64_DYNAREC_X87DOUBLE_WOW ;;
-                *) BOX64_DYNAREC_X87DOUBLE_WOW=0 
-                X87DOUBLE_WOW="0";;
-            esac
-            echo "X87DOUBLE_WOW теперь ${BOX64_DYNAREC_X87DOUBLE_WOW}."
-            ;;
-        8.) 
-            # Переключение CALLRET_WOW
-            case $BOX64_DYNAREC_CALLRET_WOW in
-                0) BOX64_DYNAREC_CALLRET_WOW=1 
-                CALLRET_WOW="1";;
-                1) 
-                CALLRET_WOW="-"
-                unset BOX64_DYNAREC_CALLRET_WOW ;;
-                *) BOX64_DYNAREC_CALLRET_WOW=0 
-                CALLRET_WOW="0";;
-            esac
-            echo "CALLRET теперь ${BOX64_DYNAREC_CALLRET_WOW}."
-            ;;
-        9.) 
-            # Переключение FASTROUND_WOW
-            case $BOX64_DYNAREC_FASTROUND_WOW in
-                0) BOX64_DYNAREC_FASTROUND_WOW=1 
-                FASTROUND_WOW="1";;
-                1) 
-                FASTROUND_WOW="-"
-                unset BOX64_DYNAREC_FASTROUND_WOW ;;
-                *) BOX64_DYNAREC_FASTROUND_WOW=0 
-                FASTROUND_WOW="0";;
-            esac
-            echo "FASTROUND_WOW теперь ${BOX64_DYNAREC_FASTROUND_WOW}."
-            ;;
-        10.) 
-            # Переключение IGNOREINT3_WOW
-            case $BOX64_IGNOREINT3_WOW in
-                0) BOX64_IGNOREINT3_WOW=1 
-                IGNOREINT3_WOW="1";;
-                1) 
-                IGNOREINT3_WOW="-"
-                unset BOX64_IGNOREINT3_WOW ;;
-                *) BOX64_IGNOREINT3_WOW=0 
-                IGNOREINT3_WOW="0";;
-            esac
-            echo "IGNOREINT3_WOW теперь ${BOX64_IGNOREINT3_WOW}."
-            ;;
-        11.) reset_dynarec_defaults
-            BOX64_DYNAREC_ALIGNED_ATOMICS_WOW=
-            ATOMICS_WOW="-"
-            BOX64_DYNAREC_BIGBLOCK_WOW=2
-            BIGS64_WOW="2"
-            BOX64_DYNAREC_FASTNAN_WOW=
-            FASTMAN_WOW="-"
-            BOX64_DYNAREC_SAFEFLAGS_WOW=2
-            SAFEFLAGS_WOW="2"
-            BOX64_DYNAREC_STRONGMEM_WOW=
-            STRONGMEM_WOW="-"
-            BOX64_DYNAREC_WAIT_WOW=
-            WAIT_WOW="-"
-            BOX64_DYNAREC_X87DOUBLE_WOW=1
-            X87DOUBLE_WOW="1"
-            BOX64_DYNAREC_CALLRET_WOW=0
-            CALLRET_WOW="0"
-            BOX64_DYNAREC_FASTROUND_WOW=
-            FASTROUND_WOW="-"
-            BOX64_IGNOREINT3_WOW=
-            IGNOREINT3_WOW="-"
-            ;;
-    esac
-}
-
-
-set_resolution() {
-    # Запрос разрешения экрана у пользователя
-    RESOLUTION=$(dialog --inputbox "Введите разрешение экрана (например, 960x540):" 8 40 2>&1 >/dev/tty)
-
-    # Проверка нажатия кнопки "Отмена"
-    if [ $? -ne 0 ]; then
-        echo "Вы отменили выбор разрешения."
-        return
-    fi
-    # Проверка формата разрешения
-    if [[ ! "$RESOLUTION" =~ ^[0-9]+x[0-9]+$ ]]; then
-        dialog --msgbox "Неверный формат разрешения. Пожалуйста, введите в формате WIDTHxHEIGHT (например, 960x540)." 10 50
-        return
-    fi
-    # Установка разрешения
-    echo "Разрешение экрана установлено на $RESOLUTION."
-    # Здесь можно сохранить значение в переменной или конфигурационном файле
-}
-
-
-set_resolution() {
-    # Запрос разрешения экрана у пользователя
-    RESOLUTION_WOW=$(dialog --inputbox "Введите разрешение экрана (например, 960x540):" 8 40 2>&1 >/dev/tty)
-
-    # Проверка нажатия кнопки "Отмена"
-    if [ $? -ne 0 ]; then
-        echo "Вы отменили выбор разрешения."
-        return
-    fi
-    # Проверка формата разрешения
-    if [[ ! "$RESOLUTION_WOW" =~ ^[0-9]+x[0-9]+$ ]]; then
-        dialog --msgbox "Неверный формат разрешения. Пожалуйста, введите в формате WIDTHxHEIGHT (например, 960x540)." 10 50
-        return
-    fi
-    # Установка разрешения
-    echo "Разрешение экрана установлено на $RESOLUTION_WOW"
-    # Здесь можно сохранить значение в переменной или конфигурационном файле
-}
-
-
-while true; do
-    if [ "$BOX_VERS" == "X86" ]; then
-        dialog_text="Настройки игры $result: $CONFIG_SETTINGS_GAME\n\
-=====================================
-\n\
-Версия Mobox:     box86 \n\
-DYNAREC:          $ALIGNED_ATOMICS,$BIGBLOCK_64,$BIGBLOCK_86,$FASTNAN,$SAFEFLAGS,$STRONGMEM,$WAIT,$X87DOUBLE,$CALLRET \n\
-Turnip:           $TURNIP \n\
-DXVK:             $DXVK \n\
-Версия DirectX:   $DX_VER \n\
-Разрешение экрана:$RESOLUTION \n\
-Выбранные ядра:   $CORES \n\
-Лимит FPS:        $FPS_LIM \n\
-=====================================
-\n\
-Выберите опцию:"
-
-    elif [ "$BOX_VERS" == "WOW64" ]; then dialog_text="Настройки игры $result: $CONFIG_SETTINGS_GAME\n\
-=====================================
-\n\
-Версия Mobox:     WoW64 \n\
-DYNAREC:          $ATOMICS_WOW,$BIGS64_WOW,$FASTMAN_WOW,$SAFEFLAGS_WOW,$STRONGMEM_WOW,$WAIT_WOW,$X87DOUBLE_WOW,$CALLRET_WOW,$FASTROUND_WOW,$IGNOREINT3_WOW\n\
-Turnip:           $TURNIP_WOW \n\
-DXVK:             $DXVK_WOW \n\
-Версия DirectX:   $DX_VER_WOW \n\
-Разрешение экрана:$RESOLUTION_WOW \n\
-Выбранные ядра:   $CORES_WOW \n\
-Лимит FPS:        $FPS_LIM_WOW \n\
-=====================================
-\n\
-Выберите опцию:"
-        
-    fi
-    
-    # Формируем массив опций в зависимости от версии Mobox
-    options=(
-        " " "Запустить игру"\
-        "1" "Версия Mobox"
-    )
-
-    if [ "$BOX_VERS" == "X86" ]; then
-        options+=(
-            "2" "Настроить DYNAREC" \
-            "3" "Выбрать Turnip" \
-            "4" "Выбрать DXVK" \
-            "5" "Версия DirectX" \
-            "6" "Разрешение экрана" \
-            "7" "Выбрать ядра" \
-            "8" "Лимит FPS"
-        )
-    elif [ "$BOX_VERS" == "WOW64" ]; then
-        options+=(
-            "2." "Настроить DYNAREC" \
-            "3." "Выбрать Turnip" \
-            "4." "Выбрать DXVK" \
-            "5." "Версия DirectX" \
-            "6." "Разрешение экрана" \
-            "7." "Выбрать ядра" \
-            "8." "Лимит FPS"
-        )
-    fi
-
-    # Вызываем диалоговое меню
-    choice=$(dialog --title "$CONFIG_SETTINGS_GAME" --menu "$dialog_text" 27 41 "${#options[@]}" "${options[@]}" 2>&1 >/dev/tty)
-
-    case $? in
-        1) break ;;  # Выход при нажатии Cancel
-        255) continue ;;  # Игнорируем возврат 255
-    esac
-
-    case $choice in
-        " ")
-        . $HOME/.shortcuts/$CONFIG_GAME
-        exit
-        ;;
-    
-       1)
-       BOX_VERS_CHOICE=$(dialog --title "Mobox" --menu "Выберите версию:" 9 32 3 \
-                "1" "Mobox box86" \
-                "2" "Mobox WoW64" 2>&1 >/dev/tty)
-
-            case $? in
-                1) continue ;;  # Игнорируем отмену
-            esac
-
-            case $BOX_VERS_CHOICE in
-                1) BOX_VERS="X86";;
-                2) BOX_VERS="WOW64";;
-            esac
-            save_settings ;;  # Сохраняем настройки
-    
         2)
-        while true; do
-            dynarec_choice=$(dialog --title "Настройки DYNAREC" --menu " " 17 45 11 \
-            "1" "DYNAREC_ALIGNED_ATOMICS= $ALIGNED_ATOMICS" \
-            "2" "BOX64_DYNAREC_BIGBLOCK= $BIGBLOCK_64" \
-            "3" "BOX86_DYNAREC_BIGBLOCK= $BIGBLOCK_86" \
-            "4" "DYNAREC_FASTNAN=$FASTNAN" \
-            "5" "DYNAREC_SAFEFLAGS= $SAFEFLAGS" \
-            "6" "DYNAREC_STRONGMEM= $STRONGMEM" \
-            "7" "DYNAREC_WAIT= $WAIT" \
-            "8" "DYNAREC_X87DOUBLE= $X87DOUBLE" \
-            "9" "DYNAREC_CALLRET= $CALLRET" \
-            "10" "Сброс к значению по умолчанию" 2>&1 >/dev/tty)
-
-                case $? in
-                    1) break ;;  # Выход при нажатии Cancel
-                esac
-
-                handle_dynarec_choice "$dynarec_choice"
-                save_settings
-            done
-        ;;
-        
-        2.)
-       while true; do
-            dynarec_choice=$(dialog --title "Настройки DYNAREC" --menu " " 18 45 11 \
-            "1." "DYNAREC_ALIGNED_ATOMICS_WOW= $ATOMICS_WOW" \
-            "2." "BOX64_DYNAREC_BIGBLOCK_WOW= $BIGS64_WOW" \
-            "3." "DYNAREC_FASTNAN_WOW= $FASTMAN_WOW" \
-            "4." "DYNAREC_SAFEFLAGS_WOW= $SAFEFLAGS_WOW" \
-            "5." "DYNAREC_STRONGMEM_WOW= $STRONGMEM_WOW" \
-            "6." "DYNAREC_WAIT_WOW= $WAIT_WOW" \
-            "7." "DYNAREC_X87DOUBLE_WOW= $X87DOUBLE_WOW" \
-            "8." "DYNAREC_CALLRET_WOW= $CALLRET_WOW" \
-            "9." "DYNAREC_FASTROUND_WOW= $FASTROUND_WOW" \
-            "10." "IGNOREINT3_WOW= $IGNOREINT3_WOW" \
-            "11." "Сброс к значению по умолчанию" 2>&1 >/dev/tty)
-
-                case $? in
-                    1) break ;;  # Выход при нажатии Cancel
-                esac
-
-                handle_dynarec_choice "$dynarec_choice"
-                save_settings
-            done
-        ;;
-        
-        3)
-            TURNIP_CHOICE=$(dialog --title "Выберите Turnip" --menu " " 14 40 3 \
-                "1" "Turnip Zink v3" \
-                "2" "Turnip Zinc v3.5" \
-                "3" "Turnip Zinc v4" \
-                "4" "VirGL Mesa 18.3.0" \
-                "5" "VirGL Mesa 19.1.8" \
-                "6" "VirGL Mesa 22.1.7" \
-                "7" "VirGL Mesa 24.0.0" 2>&1 >/dev/tty)
+            while true; do
+                dynarec_choice=$(show_dialog "Настройки DYNAREC" " " 11 \
+            "1" "DYNAREC_ALIGNED_ATOMICS= $ATOMICS_WOW" \
+            "2" "BOX64_DYNAREC_BIGBLOCK= $BIGS64_WOW" \
+            "3" "DYNAREC_FASTNAN= $FASTNAN_WOW" \
+            "4." "DYNAREC_SAFEFLAGS= $SAFEFLAGS_WOW" \
+            "5" "DYNAREC_STRONGMEM= $STRONGMEM_WOW" \
+            "6" "DYNAREC_WAIT= $WAIT_WOW" \
+            "7" "DYNAREC_X87DOUBLE= $X87DOUBLE_WOW" \
+            "8" "DYNAREC_CALLRET= $CALLRET_WOW" \
+            "9" "DYNAREC_FASTROUND= $FASTROUND_WOW" \
+            "10" "IGNOREINT3= $IGNOREINT3_WOW" \
+            "11" "Сброс к значению по умолчанию" 2>&1 >/dev/tty)
 
             case $? in
-                1) continue ;;  # Игнорируем отмену
+                1) break ;;  # Выход при нажатии Cancel
             esac
+            case "$dynarec_choice" in
+                1)
+# Переключение ALIGNED_ATOMICS
+                if [ "$ATOMICS_WOW" == "0" ]; then
+                            ATOMICS_WOW="1"
+                elif [ "$ALIGNED_ATOMICS" == "1" ]; then
+                            ATOMICS_WOW="-"
+                elif [ "$ATOMICS_WOW" == "-" ]; then
+                            ATOMICS_WOW="0"
+                fi ;;
+                2)
+# Логика для BIGBLOCK_64
+                if [ "$BIGS64_WOW" == "0" ]; then
+                            BIGS64_WOW="1"
+                elif [ "$BIGS64_WOW" == "1" ]; then
+                            BIGBLOCK_64="2"
+                elif [ "$BIGS64_WOW" == "2" ]; then
+                            BIGS64_WOW="-"
+                elif [ "$BIGS64_WOW" == "-" ]; then
+                            BIGS64_WOW="0"
+                fi ;;
+                3)
+# Переключение FASTNAN_WOW
+                if [ "$FASTNAN_WOW" == "0" ]; then
+                    FASTNAN_WOW="1"
+                elif [ "$FASTNAN_WOW" == "1" ]; then
+                            FASTNAN_WOW="-"
+                elif [ "$FASTNAN_WOW" == "-" ]; then
+                            FASTNAN_WOW="0"
+                fi ;;
+                4)
+# Переключение SAFEFLAGS_WOW
+                if [ "$SAFEFLAGS_WOW" == "0" ]; then
+                    SAFEFLAGS_WOW="1"
+                elif [ "$SAFEFLAGS_WOW" == "1" ]; then
+                    SAFEFLAGS_WOW="2"
+                elif [ "$SAFEFLAGS_WOW" == "2" ]; then
+                    SAFEFLAGS_WOW="-"
+                elif [ "$SAFEFLAGS_WOW" == "-" ]; then
+                    SAFEFLAGS_WOW="0"
+                fi ;;
+                5)
+# Переключение STRONGMEM_WOW
+                if [ "$STRONGMEM_WOW" == "0" ]; then
+                            STRONGMEM_WOW="1"
+                elif [ "$STRONGMEM_WOW" == "1" ]; then
+                            STRONGMEM_WOW="2"
+                elif [ "$STRONGMEM_WOW" == "2" ]; then
+                            STRONGMEM_WOW="3"
+                elif [ "$STRONGMEM_WOW" == "3" ]; then
+                            STRONGMEM_WOW="-"
+                elif [ "$STRONGMEM_WOW" == "-" ]; then
+                            STRONGMEM_WOW="0"
+                fi ;;
+                6)
+# Переключение WAIT
+                if [ "$WAIT_WOW" == "0" ]; then
+                    WAIT_WOW="1"
+                elif [ "$WAIT_WOW" == "1" ]; then
+                    WAIT_WOW="-"
+                elif [ "$WAIT_WOW" == "-" ]; then
+                    WAIT_WOW="0"
+                fi ;;
+                7)
+# Переключение X87DOUBLE
+                if [ "$X87DOUBLE_WOW" == "0" ]; then
+                    X87DOUBLE_WOW="1"
+                elif [ "$X87DOUBLE_WOW" == "1" ]; then
+                    X87DOUBLE_WOW="-"
+                elif [ "$X87DOUBLE_WOW" == "-" ]; then
+                    X87DOUBLE_WOW="0"
+                fi ;;
 
-            case $TURNIP_CHOICE in
-                1) TURNIP="-v3";;
-                2) TURNIP="-v3.5";;
-                3) TURNIP="-v4";;
-                4) TURNIP="-virgl-mesa-18";;
-                5) TURNIP="-virgl-mesa-19";;
-                6) TURNIP="-virgl-mesa-22";;
-                7) TURNIP="-virgl-mesa-24";;
-            esac
-            save_settings ;;  # Сохраняем настройки
-        
-        3.)
+                8)
+# Переключение CALLRET
+                if [ "$CALLRET_WOW" == "0" ]; then
+                    CALLRET_WOW="1"
+                elif [ "$CALLRET_WOW" == "1" ]; then
+                    CALLRET_WOW="-"
+                elif [ "$CALLRET_WOW" == "-" ]; then
+                    CALLRET_WOW="0"
+                fi ;;
+                
+               9)
+# Переключение FASTROUND_WOW
+                if [ "$FASTROUND_WOW" == "0" ]; then
+                    FASTROUND_WOW="1"
+                elif [ "$FASTROUND_WOW" == "1" ]; then
+                    FASTROUND_WOW="-"
+                elif [ "$FASTROUND_WOW" == "-" ]; then
+                    FASTROUND_WOW="0"
+                fi ;;
+                
+                10)
+# Переключение IGNOREINT3_WOW
+                if [ "$IGNOREINT3_WOW" == "0" ]; then
+                    IGNOREINT3_WOW="1"
+                elif [ "$IGNOREINT3_WOW" == "1" ]; then
+                    IGNOREINT3_WOW="-"
+                elif [ "$IGNOREINT3_WOW" == "-" ]; then
+                    IGNOREINT3_WOW="0"
+                fi ;;
+                
+                11)
+# Сброс к значениям по умолчанию
+                    ATOMICS_WOW=-
+                    BIGS64_WOW=2
+                    FASTNAN_WOW=-
+                    SAFEFLAGS_WOW=2
+                    STRONGMEM_WOW=-
+                    WAIT_WOW=-
+                    X87DOUBLE_WOW=1
+                    CALLRET_WOW=0
+                    FASTROUND_WOW=-
+                    IGNOREINT3_WOW=-
+                    ;;
+                esac
+                
+# Обновление файла конфигурации в зависимости от значений переменных
+                case ${ATOMICS_WOW} in
+                0)
+                sed -i '1s/.*/ATOMICS_WOW=0/' "$CONFIG_x64"
+                sed -i '2s/.*/export BOX64_DYNAREC_ALIGNED_ATOMICS=0/' "$CONFIG_x64";;
+                1)
+                sed -i '1s/.*/ATOMICS_WOW=1/' "$CONFIG_x64"
+                sed -i '2s/.*/export BOX64_DYNAREC_ALIGNED_ATOMICS=1/' "$CONFIG_x64" ;;
+                -)
+                sed -i '1s/.*/ATOMICS_WOW=-/' "$CONFIG_x64"
+                sed -i '2s/.*/unset BOX64_DYNAREC_ALIGNED_ATOMICS/' "$CONFIG_x64";;
+                esac
+
+                case ${BIGS64_WOW} in
+                0)
+                sed -i '3s/.*/BIGS64_WOW=0/' "$CONFIG_x64"
+                sed -i '4s/.*/export BOX64_DYNAREC_BIGBLOCK=0/' "$CONFIG_x64" ;;
+                1)
+                sed -i '3s/.*/BIGS64_WOW=1/' "$CONFIG_x64"
+                sed -i '4s/.*/export BOX64_DYNAREC_BIGBLOCK=1/' "$CONFIG_x64" ;;
+                2)
+                sed -i '3s/.*/BIGS64_WOW=2/' "$CONFIG_x64"
+                sed -i '4s/.*/export BOX64_DYNAREC_BIGBLOCK=2/' "$CONFIG_x64" ;;
+                    -)
+                sed -i '3s/.*/BIGS64_WOW=-/' "$CONFIG_x64"
+                sed -i '4s/.*/unset BOX64_DYNAREC_BIGBLOCK/' "$CONFIG_x64" ;;
+                esac
+                
+                case ${FASTNAN} in
+                0)
+                sed -i '5s/.*/FASTNAN_WOW=0/' "$CONFIG_x64"
+                sed -i '6s/.*/export BOX64_DYNAREC_FASTNAN=0/' "$CONFIG_x64" ;;
+                1)
+                sed -i '5s/.*/FASTNAN_WOW=1/' "$CONFIG_x64"
+                sed -i '6s/.*/export BOX64_DYNAREC_FASTNAN=1/' "$CONFIG_x64" ;;
+                -)
+                sed -i '5s/.*/FASTNAN_WOW=-/' "$CONFIG_x64"
+                sed -i '6s/.*/unset BOX64_DYNAREC_FASTNAN/' "$CONFIG_x64";;
+                esac
+                
+                case ${SAFEFLAGS} in
+                0)
+                sed -i '7s/.*/SAFEFLAGS=0/' "$CONFIG_x64"
+                sed -i '8s/.*/export BOX64_DYNAREC_SAFEFLAGS=0/' "$CONFIG_x64";;
+                1)
+                sed -i '7s/.*/SAFEFLAGS=1/' "$CONFIG_x64"
+                sed -i '8s/.*/export BOX64_DYNAREC_SAFEFLAGS=1/' "$CONFIG_x64";;
+                2)
+                sed -i '7s/.*/SAFEFLAGS=2/' "$CONFIG_x64"
+                sed -i '8s/.*/export BOX64_DYNAREC_SAFEFLAGS=2/' "$CONFIG_x64";;
+                -)
+                sed -i '7s/.*/SAFEFLAGS=-/' "$CONFIG_x64"
+                sed -i '8s/.*/unset BOX64_DYNAREC_SAFEFLAGS/' "$CONFIG_x64";;
+                esac
+                
+                case ${STRONGMEM_WOW} in
+                0)
+                sed -i '9s/.*/STRONGMEM_WOW=0/' "$CONFIG_x64"
+                sed -i '10s/.*/export BOX64_DYNAREC_STRONGMEM=0/' "$CONFIG_x64";;
+                1)
+                sed -i '9s/.*/STRONGMEM_WOW=1/' "$CONFIG_x64"
+                sed -i '10s/.*/export BOX64_DYNAREC_STRONGMEM=1/' "$CONFIG_x64";;
+                2)
+                sed -i '9s/.*/STRONGMEM_WOW=2/' "$CONFIG_x64"
+                sed -i '10s/.*/export BOX64_DYNAREC_STRONGMEM=2/' "$CONFIG_x64";;
+                3)
+                sed -i '9s/.*/STRONGMEM_WOW=3/' "$CONFIG_x64"
+                sed -i '10s/.*/export BOX64_DYNAREC_STRONGMEM=3/' "$CONFIG_x64";;
+                -)
+                sed -i '9s/.*/STRONGMEM_WOW=-/' "$CONFIG_x64"
+                sed -i '10s/.*/unset BOX64_DYNAREC_STRONGMEM/' "$CONFIG_x64";;
+                esac
+                
+                case ${WAIT_WOW} in
+                0)
+                sed -i '11s/.*/WAIT_WOW=0/' "$CONFIG_x64"
+                sed -i '12s/.*/export BOX64_DYNAREC_WAIT=0/' "$CONFIG_x64";;
+                1)
+                sed -i '11s/.*/WAIT_WOW=1/' "$CONFIG_x64"
+                sed -i '12s/.*/export BOX64_DYNAREC_WAIT=1/' "$CONFIG_x64";;
+                -)
+                sed -i '11s/.*/WAIT_WOW=-/' "$CONFIG_x64"
+                sed -i '12s/.*/unset BOX64_DYNAREC_WAIT/' "$CONFIG_x64";;
+                esac
+
+                case ${X87DOUBLE_WOW} in
+                0)
+                sed -i '13s/.*/X87DOUBLE_WOW=0/' "$CONFIG_x64"
+                sed -i '14s/.*/export BOX64_DYNAREC_X87DOUBLE=0/' "$CONFIG_x64";;
+                1)
+                sed -i '13s/.*/X87DOUBLE_WOW=1/' "$CONFIG_x64"
+                sed -i '14s/.*/export BOX64_DYNAREC_X87DOUBLE=1/' "$CONFIG_x64";;
+                -)
+                sed -i '13s/.*/X87DOUBLE_WOW=-/' "$CONFIG_x64"
+                sed -i '14s/.*/unset BOX64_DYNAREC_X87DOUBLE/' "$CONFIG_x64";;
+                esac
+
+                case ${CALLRET_WOW} in
+                0)
+                sed -i '15s/.*/CALLRET_WOW=0/' "$CONFIG_x64"
+                sed -i '16s/.*/export BOX64_DYNAREC_CALLRET=0/' "$CONFIG_x64";;
+                1)
+                sed -i '15s/.*/CALLRET_WOW=1/' "$CONFIG_x64"
+                sed -i '16s/.*/export BOX64_DYNAREC_CALLRET=1/' "$CONFIG_x64" ;;
+                -)
+                sed -i '15s/.*/CALLRET_WOW=-/' "$CONFIG_x64"
+                sed -i '16s/.*/unset BOX64_DYNAREC_CALLRET/' "$CONFIG_x64";;
+                esac
+                
+                case ${FASTROUND_WOW} in
+                0)
+                sed -i '17s/.*/FASTROUND_WOW=0/' "$CONFIG_x64"
+                sed -i '18s/.*/export BOX64_DYNAREC_FASTROUND=0/' "$CONFIG_x64";;
+                1)
+                sed -i '17s/.*/FASTROUND_WOW=1/' "$CONFIG_x64"
+                sed -i '18s/.*/export BOX64_DYNAREC_FASTROUND=1/' "$CONFIG_x64" ;;
+                -)
+                sed -i '17s/.*/FASTROUND_WOW=-/' "$CONFIG_x64"
+                sed -i '18s/.*/unset BOX64_DYNAREC_FASTROUND/' "$CONFIG_x64" ;;
+                esac
+                
+                case ${IGNOREINT3_WOW} in
+                0)
+                sed -i '19s/.*/IGNOREINT3_WOW=0/' "$CONFIG_x64"
+                sed -i '20s/.*/export BOX64_IGNOREINT3=0/' "$CONFIG_x64";;
+                1)
+                sed -i '19s/.*/IGNOREINT3_WOW=1/' "$CONFIG_x64"
+                sed -i '20s/.*/export BOX64_IGNOREINT3=1/' "$CONFIG_x64" ;;
+                -)
+                sed -i '19s/.*/IGNOREINT3_WOW=-/' "$CONFIG_x64"
+                sed -i '20s/.*/unset BOX64_IGNOREINT3/' "$CONFIG_x64" ;;
+                esac
+        done
+        3)
             TURNIP_CHOICE=$(dialog --title "Выберите Turnip" --menu " " 16 40 3 \
                 "1" "Turnip Zink v2" \
                 "2" "Turnip Zinc v3.5" \
@@ -634,17 +284,26 @@ DXVK:             $DXVK_WOW \n\
             esac
 
             case $TURNIP_CHOICE in
-                1) TURNIP_WOW="-zink-v2";;
-                2) TURNIP_WOW="-zink-v3.5";;
-                3) TURNIP_WOW="-zink-v4";;
-                4) TURNIP_WOW="-zink-v5";;
-                5) TURNIP_WOW="-zink-v6.5";;
-                6) TURNIP_WOW="-virgl_mesa-18.3.0";;
-                7) TURNIP_WOW="-virgl_mesa-19.1.8";;
-                8) TURNIP_WOW="-virgl_mesa-22.1.7";;
-                9) TURNIP_WOW="-virgl_mesa-24.0.0";;
+                1) 
+               TURNIP_WOW="-zink-v2" ;;
+                2) 
+                TURNIP_WOW="-zink-v3.5";;
+                3) 
+                TURNIP_WOW="-zink-v4";;
+                4) 
+                TURNIP_WOW="-zink-v5";;
+                5) 
+                TURNIP_WOW="-zink-v6.5";;
+                6) 
+               TURNIP_WOW="-virgl_mesa-18.3.0";;
+                7) 
+                TURNIP_WOW="-virgl_mesa-19.1.8";;
+                8) 
+               TURNIP_WOW="-virgl_mesa-22.1.7";;
+                9) 
+               TURNIP_WOW="-virgl_mesa-24.0.0";;
             esac
-            save_settings ;;  # Сохраняем настройки
+            sed -i "21s/.*/TURNIP_86=${TURNIP_64}/" "$CONFIG_x64";;
             
         4)
             DXVK_CHOICE=$(dialog --title "Выберите DXVK" --menu " " 22 40 5 \
@@ -669,65 +328,39 @@ DXVK:             $DXVK_WOW \n\
             esac
             
             case $DXVK_CHOICE in
-                1) DXVK="-d8vk";;
-                2) DXVK="-0.96";;
-                3) DXVK="-1.6.1";;
-                4) DXVK="-async-1.10.3";;
-                5) DXVK="-dev";;
-                6) DXVK="-async-2.0";;
-                7) DXVK="-gplasync-2.2";;
-                8) DXVK="-gplasync-2.3";;
-                9) DXVK="-vkd3d";;
-                10) DXVK="-wined3d-4.13";;
-                11) DXVK="-wined3d-7.2";;
-                12) DXVK="-wined3d-7.21";;
-                13) DXVK="-wined3d-7.8";;
-                14) DXVK="-wined3d-8.0.2";;
-                15) DXVK="-wined3d-8.20";;
+                1) 
+               DXVK_WOW="-d8vk";;
+                2) 
+                DXVK_WOW="-0.96";;
+                3) 
+                DXVK_WOW="-1.6.1";;
+                4) 
+                DXVK_WOW="-async-1.10.3";;
+                5) 
+                DXVK_WOW="-dev";;
+                6) 
+                DXVK_WOW="-async-2.0";;
+                7) 
+                DXVK_WOW="-gplasync-2.2";;
+                8) 
+                DXVK_WOW="-gplasync-2.3";;
+                9) 
+                DXVK_WOW="-vkd3d";;
+                10) 
+                DXVK_WOW="-wined3d-4.13";;
+                11) 
+                DXVK_WOW="-wined3d-7.2";;
+                12) 
+                DXVK_WOW="-wined3d-7.21";;
+                13) 
+                DXVK_WOW="-wined3d-7.8";;
+                14) 
+                DXVK_WOW="-wined3d-8.0.2";;
+                15) 
+                DXVK_WOW="-wined3d-8.20";;
             esac
-            save_settings ;;  # Сохраняем настройки
-
-        4.)
-            DXVK_CHOICE=$(dialog --title "Выберите DXVK" --menu " " 22 40 5 \
-                "1" "dxvk-d8vk-1.0" \
-                "2" "dxvk-0.96" \
-                "3" "dxvk-1.6.1" \
-                "4" "dxvk-async-1.10.3" \
-                "5" "dxvk-dev" \
-                "6" "dxvk-async-2.0" \
-                "7" "dxvk-gplasync-2.2" \
-                "8" "dxvk-gplasync-2.3" \
-                "9" "vkd3d" \
-                "10" "wined3d-4.13" \
-                "11" "wined3d-7.2" \
-                "12" "wined3d-7.21" \
-                "13" "wined3d-7.8" \
-                "14" "wined3d-8.0.2" \
-                "15" "wined3d-8.20" 2>&1 >/dev/tty)
-
-            case $? in
-                1) continue ;;  
-            esac
+            sed -i "23s/.*/DXVK_WOW=${DXVK_WOW}/" "$CONFIG_x64";;
             
-            case $DXVK_CHOICE in
-                1) DXVK_WOW="-d8vk";;
-                2) DXVK_WOW="-0.96";;
-                3) DXVK_WOW="-1.6.1";;
-                4) DXVK_WOW="-async-1.10.3";;
-                5) DXVK_WOW="-dev";;
-                6) DXVK_WOW="-async-2.0";;
-                7) DXVK_WOW="-gplasync-2.2";;
-                8) DXVK_WOW="-gplasync-2.3";;
-                9) DXVK_WOW="-vkd3d";;
-                10) DXVK_WOW="-wined3d-4.13";;
-                11) DXVK_WOW="-wined3d-7.2";;
-                12) DXVK_WOW="-wined3d-7.21";;
-                13) DXVK_WOW="-wined3d-7.8";;
-                14) DXVK_WOW="-wined3d-8.0.2";;
-                15) DXVK_WOW="-wined3d-8.20";;
-            esac
-            save_settings ;;  # Сохраняем настройки
-
         5) 
             DX_VER_CHOICE=$(dialog --title "Выберите максимальный DirectX" --menu " " 16 40 5 \
                 "1" "DirectX 9.1" \
@@ -745,48 +378,28 @@ DXVK:             $DXVK_WOW \n\
             esac
 
             case $DX_VER_CHOICE in
-                1) DX_VER="9_1";;
-                2) DX_VER="9_2";;
-                3) DX_VER="9_3";;
-                4) DX_VER="10_0";;
-                5) DX_VER="10_1";;
-                6) DX_VER="11_0";;
-                7) DX_VER="11_1";;
-                8) DX_VER="12_0";;
-                9) DX_VER="12_1";;
+                1) 
+                DX_VER_WOW="9_1";;
+                2) 
+                DX_VER_WOW="9_2";;
+                3) 
+                DX_VER_WOW="9_3";;
+                4) 
+                DX_VER_WOW="10_0";;
+                5) 
+                DX_VER_WOW="10_1";;
+                6) 
+                DX_VER_WOW="11_0";;
+                7) 
+                DX_VER_WOW="11_1";;
+                8) 
+                DX_VER_WOW="12_0";;
+                9) 
+                DX_VER_WOW="12_1";;
             esac
-            save_settings ;;  # Сохраняем настройки
+            sed -i "25s/.*/DX_VER_WOW=${DX_VER_WOW}/" "$CONFIG_x64";;
             
-        5.) 
-            DX_VER_CHOICE=$(dialog --title "Выберите максимальный DirectX" --menu " " 16 40 5 \
-                "1" "DirectX 9.1" \
-                "2" "DirectX 9.2" \
-                "3" "DirectX 9.3" \
-                "4" "DirectX 10.0" \
-                "5" "DirectX 10.1" \
-                "6" "DirectX 11.0" \
-                "7" "DirectX 11.1" \
-                "8" "DirectX 12.0" \
-                "9" "DirectX 12.1" 2>&1 >/dev/tty)
-
-            case $? in
-                1) continue ;;  # Игнорируем отмену
-            esac
-
-            case $DX_VER_CHOICE in
-                1) DX_VER_WOW="9_1";;
-                2) DX_VER_WOW="9_2";;
-                3) DX_VER_WOW="9_3";;
-                4) DX_VER_WOW="10_0";;
-                5) DX_VER_WOW="10_1";;
-                6) DX_VER_WOW="11_0";;
-                7) DX_VER_WOW="11_1";;
-                8) DX_VER_WOW="12_0";;
-                9) DX_VER_WOW="12_1";;
-            esac
-            save_settings ;;  # Сохраняем настройки
-
- 6)
+            6)
             RES_GAME_CHOICE=$(dialog --title "Выберите разрешение экрана" --menu "\n
 Внимание:\n
 Выставить такое же разрешение экрана и в Termux-x11 или WEG™:x11" 27 40 5 \
@@ -824,113 +437,64 @@ DXVK:             $DXVK_WOW \n\
 
             case $RES_GAME_CHOICE in
                 1)
-                set_resolution;;
-                2) RESOLUTION="320x200";;
-                3) RESOLUTION="320x240";;
-                4) RESOLUTION="320×256";;
-                5) RESOLUTION="400x240";;
-                6) RESOLUTION="640x360";;
-                7) RESOLUTION="640x400";;
-                8) RESOLUTION="640x480";;
-                9) RESOLUTION="800x480";;
-                10) RESOLUTION="800x600";;
-                11) RESOLUTION="854x480";;
-                12) RESOLUTION="960x540";;
-                13) RESOLUTION="1024x576";;
-                14) RESOLUTION="1024x768";;
-                15) RESOLUTION="1152x648";;
-                16) RESOLUTION="1152x720";;
-                17) RESOLUTION="1200x648";;
-                18) RESOLUTION="1280x720";;
-                19) RESOLUTION="1280x800";;
-                20) RESOLUTION="1280x960";;
-                21) RESOLUTION="1280x1024";;
-                22) RESOLUTION="1400x1080";;
-                23) RESOLUTION="1600x900";;
-                24) RESOLUTION="1640x1025";;
-                25) RESOLUTION="1680x1050";;
-                26) RESOLUTION="1920x1080";;
-                27) RESOLUTION="1920x1200";;
+                set_resolution_wow;;
+                2) 
+                RESOLUTION_WOW="320x200";;
+                3) 
+                RESOLUTION_WOW="320x240";;
+                4) 
+                RESOLUTION_WOW="320×256";;
+                5) 
+                RESOLUTION_WOW="400x240";;
+                6) 
+                RESOLUTION_WOW="640x360";;
+                7) 
+                RESOLUTION_WOW="640x400";;
+                8) 
+                RESOLUTION_WOW="640x480";;
+                9) 
+                RESOLUTION_WOW=;"800x480";;
+                10) 
+                RESOLUTION_WOW="800x600";;
+                11) 
+                RESOLUTION_WOW="854x480";;
+                12) 
+                RESOLUTION_WOW="960x540";;
+                13) 
+                RESOLUTION_WOW="1024x576";;
+                14) 
+                RESOLUTION_WOW="1024x768";;
+                15) 
+                RESOLUTION_WOW="1152x648";;
+                16) 
+                RESOLUTION_WOW="1152x720";;
+                17) 
+                RESOLUTION_WOW="1200x648";;
+                18) 
+                RESOLUTION_WOW="1280x720";;
+                19) 
+                RESOLUTION_WOW="1280x800";;
+                20) 
+                RESOLUTION_WOW="1280x960";;
+                21) 
+                RESOLUTION_WOW="1280x1024";;
+                22) 
+                RESOLUTION_WOW="1400x1080";;
+                23) 
+                RESOLUTION_WOW="1600x900";;
+                24) 
+                RESOLUTION_WOW="1640x1025";;
+                25) 
+                RESOLUTION_WOW="1680x1050";;
+                26) 
+                RESOLUTION_WOW="1920x1080";;
+                27) 
+                RESOLUTION_WOW="1920x1200";;
             esac
-            save_settings   # Сохраняем настройки
-            dialog --msgbox "Внимание \n\n
-Выберите разрешение $RESOLUTION в Termux:x11 или WEG™:x11" 10 30 ;;
-
-
- 6.)
-            RES_GAME_CHOICE=$(dialog --title "Выберите разрешение экрана" --menu "\n
-Внимание:\n
-Выставить такое же разрешение экрана и в Termux-x11 или WEG™:x11" 27 40 5 \
-                "1"  "Ручной ввод (WxH)" \
-                "2"  "320x200     (16:10)" \
-                "3"  "320x240     (4:3)" \
-                "4"  "320×256     (5:4)" \
-                "5"  "400x240     (5:3)" \
-                "6"  "640x360     (16:9)" \
-                "7"  "640x400     (16:10)" \
-                "8"  "640x480     (4:3)" \
-                "9"  "800x480     (5:3)" \
-                "10" "800x600     (4:3)" \
-                "11" "854x480     (16:9)" \
-                "12" "960x540     (16:9)" \
-                "13" "1024x576    (16:9)" \
-                "14" "1024x768    (4:3)" \
-                "15" "1152x648    (16:9)" \
-                "16" "1152x720    (16:10)" \
-                "17" "1200x648    (16:9)" \
-                "18" "1280x720    (16:9)" \
-                "19" "1280x800    (16:10)" \
-                "20" "1280x960    (4:3)" \
-                "21" "1280x1024   (5:4)" \
-                "22" "1400x1080   (4:3)" \
-                "23" "1600x900    (16:9)" \
-                "24" "1640x1025   (16:10)" \
-                "25" "1680x1050   (16:10)" \
-                "26" "1920x1080   (16:9)" \
-                "27" "1920x1200   (16:10)"  2>&1 >/dev/tty)
-
-            case $? in
-                1) continue ;;  # Игнорируем отмену
-            esac
-
-            case $RES_GAME_CHOICE in
-                1)
-                set_resolution;;
-                2) RESOLUTION_WOW="320x200";;
-                3) RESOLUTION_WOW="320x240";;
-                4) RESOLUTION_WOW="320×256";;
-                5) RESOLUTION_WOW="400x240";;
-                6) RESOLUTION_WOW="640x360";;
-                7) RESOLUTION_WOW="640x400";;
-                8) RESOLUTION_WOW="640x480";;
-                9) RESOLUTION_WOW="800x480";;
-                10) RESOLUTION_WOW="800x600";;
-                11) RESOLUTION_WOW="854x480";;
-                12) RESOLUTION_WOW="960x540";;
-                13) RESOLUTION_WOW="1024x576";;
-                14) RESOLUTION_WOW="1024x768";;
-                15) RESOLUTION_WOW="1152x648";;
-                16) RESOLUTION_WOW="1152x720";;
-                17) RESOLUTION_WOW="1200x648";;
-                18) RESOLUTION_WOW="1280x720";;
-                19) RESOLUTION_WOW="1280x800";;
-                20) RESOLUTION_WOW="1280x960";;
-                21) RESOLUTION_WOW="1280x1024";;
-                22) RESOLUTION_WOW="1400x1080";;
-                23) RESOLUTION_WOW="1600x900";;
-                24) RESOLUTION_WOW="1640x1025";;
-                25) RESOLUTION_WOW="1680x1050";;
-                26) RESOLUTION_WOW="1920x1080";;
-                27) RRESOLUTION_WOW="1920x1200";;
-                
-                            
-            
-            
-            esac
-            save_settings   # Сохраняем настройки
+            sed -i "26s/.*/RESOLUTION_WOW=${RESOLUTION_WOW}/" "$CONFIG_x64";;
             dialog --msgbox "Внимание \n\n
 Выберите разрешение $RESOLUTION_WOW в Termux:x11 или WEG™:x11" 10 30 ;;
-
+            
         7) 
             CORES_CHOICE=$(dialog --title "Выберите количество ядер" --menu " " 13 40 3 \
             "1" "с 1 по 7" \
@@ -945,111 +509,53 @@ DXVK:             $DXVK_WOW \n\
             esac
 
             case $CORES_CHOICE in
-                1) CORES="1-7"
-                PRIMARY=1-7
-                SECONDARY=0-1;;
-                2) CORES="2-7"
-                PRIMARY=2-7
-                SECONDARY=0-1;;
-                3) CORES="3-7"
-                PRIMARY=3-7
-                SECONDARY=0-2;;
-                4) CORES="3-7"
-                PRIMARY=4-7
-                SECONDARY=0-3;;
-                5) CORES="3-7"
-                PRIMARY=5-7
-                SECONDARY=0-4;;
-                6) CORES="3-7"
-                PRIMARY=6-7
-                SECONDARY=0-5;;
-            esac
-            save_settings ;;  # Сохраняем настройки
-
-        7.) 
-            CORES_CHOICE=$(dialog --title "Выберите количество ядер" --menu " " 13 40 3 \
-            "1" "с 1 по 7" \
-            "2" "с 2 по 7" \
-            "3" "с 3 по 7" \
-            "4" "с 4 по 7" \
-            "5" "с 5 по 7" \
-            "6" "6 и 7" 2>&1 >/dev/tty)
-
-            case $? in
-                1) continue ;;  # Игнорируем отмену
-            esac
-
-            case $CORES_CHOICE in
-                1) CORES_WOW="1-7"
+                1) 
                 PRIMARY_WOW=1-7
-                SECONDARY_WOW=0-1;;
-                2) CORES_WOW="2-7"
+                SECONDARY_WOW=0-1
+                CORES_WOW="1-7";;
+                2) 
                 PRIMARY_WOW=2-7
-                SECONDARY_WOW=0-1;;
-                3) CORES_WOW="3-7"
+                SECONDARY_WOW=0-1
+                CORES_WOW="2-7";;
+                3) 
                 PRIMARY_WOW=3-7
-                SECONDARY_WOW=0-2;;
-                4) CORES_WOW="3-7"
+                SECONDARY_WOW=0-2
+                CORES_WOW="3-7";;
+                4) 
                 PRIMARY_WOW=4-7
-                SECONDARY_WOW=0-3;;
-                5) CORES_WOW="3-7"
+                SECONDARY_WOW=0-3
+                CORES_WOW="4-7";;
+                5) 
                 PRIMARY_WOW=5-7
-                SECONDARY_WOW=0-4;;
-                6) CORES_WOW="3-7"
+                SECONDARY_WOW=0-4
+                CORES_WOW="5-7";;
+                6) 
                 PRIMARY_WOW=6-7
-                SECONDARY_WOW=0-5;;
+                SECONDARY_WOW=0-5
+                CORES_WOW="6-7";;
             esac
-            save_settings ;;  # Сохраняем настройки
-
-        8) while true; do
-        # Ввод значения FPS
-        FPS_LIM_CHOICE=$(dialog --title "Выберите лимит FPS" --inputbox "Введите максимальное значение FPS кратное 5 (от 15 до 240 или 0):\n
-\n
-0 - без ограничения" 12 40 $FPS_LIM 2>&1 >/dev/tty)
-                case $? in
-                1) continue ;;  # Игнорируем отмену
-                esac
-                # Проверка, является ли введенное значение числом и находится ли оно в допустимом диапазоне
-                if [[ "$FPS_LIM_CHOICE" =~ ^[0-9]+$ ]] && [ "$FPS_LIM_CHOICE" -eq 0 ] || [ "$FPS_LIM_CHOICE" -ge 15 ] && [ "$FPS_LIM_CHOICE" -le 240 ]; 
-                then
-                # Проверка, кратно ли значение 5
-                if (( FPS_LIM_CHOICE % 5 == 0 )); then
-                FPS_LIM="$FPS_LIM_CHOICE"
-                break
-                else
-                dialog --msgbox "Ошибка: Пожалуйста, введите число, кратное 5." 10 30
-                fi
-                else
-                dialog --msgbox "Ошибка: Пожалуйста, введите число от 15 до 240 или 0." 10 30
-                fi
-            done
-            save_settings ;;  # Сохраняем настройки
+            sed -i "27s/.*/PRIMARY_WOW=${PRIMARY_WOW}/" "$CONFIG_x64";;
             
-            
-        8.) while true; do
-        # Ввод значения FPS
-        FPS_LIM_CHOICE=$(dialog --title "Выберите лимит FPS" --inputbox "Введите максимальное значение FPS кратное 5 (от 15 до 240 или 0):\n
-\n
-0 - без ограничения" 12 40 $FPS_LIM_WOW 2>&1 >/dev/tty)
-                case $? in
-                1) continue ;;  # Игнорируем отмену
-                esac
-                # Проверка, является ли введенное значение числом и находится ли оно в допустимом диапазоне
-                if [[ "$FPS_LIM_CHOICE" =~ ^[0-9]+$ ]] && [ "$FPS_LIM_CHOICE" -eq 0 ] || [ "$FPS_LIM_CHOICE" -ge 15 ] && [ "$FPS_LIM_CHOICE" -le 240 ]; 
-                then
-                # Проверка, кратно ли значение 5
-                if (( FPS_LIM_CHOICE % 5 == 0 )); then
-                FPS_LIM_WOW="$FPS_LIM_CHOICE"
-                break
-                else
-                dialog --msgbox "Ошибка: Пожалуйста, введите число, кратное 5." 10 30
-                fi
-                else
-                dialog --msgbox "Ошибка: Пожалуйста, введите число от 15 до 240 или 0." 10 30
-                fi
+        8)
+            while true; do
+# Ввод значения FPS
+            FPS_LIM_CHOICE=$(dialog --title "Выберите лимит FPS" --inputbox "Введите максимальное значение FPS кратное 5 (от 15 до 240 или 0):\n\n0 - без ограничения" 12 40 $FPS_LIM_WOW 2>&1 >/dev/tty)
+            case $? in
+            1) continue ;;  # Игнорируем отмену
+            esac
+    
+# Проверка, является ли введенное значение числом и находится ли оно в допустимом диапазоне
+            if [[ "$FPS_LIM_CHOICE" =~ ^[0-9]+$ ]] && [ "$FPS_LIM_CHOICE" -eq 0 ] || [ "$FPS_LIM_CHOICE" -ge 15 ] && [ "$FPS_LIM_CHOICE" -le 240 ]; then
+# Проверка, кратно ли значение 5
+            if (( FPS_LIM_CHOICE % 5 == 0 )); then
+            FPS_LIM_86="$FPS_LIM_CHOICE"
+            # Запись значения в 45-ю строку файла
+            sed -i "28s/.*/FPS_LIM_86=${FPS_LIM_WOW}/" "$CONFIG_x64"
+            break
+            else
+            dialog --msgbox "Ошибка: Пожалуйста, введите число, кратное 5." 10 30
+            fi
+            else
+            dialog --msgbox "Ошибка: Пожалуйста, введите число от 15 до 240 или 0." 10 30
+            fi
             done
-            save_settings ;;  # Сохраняем настройки
-    esac
-done
-
-. $HOME/.shortcuts/,/3-Настройки-игр-из-списка 
