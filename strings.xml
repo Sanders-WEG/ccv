@@ -80,8 +80,8 @@ choose_action() {
     case $action in
         1)
             {
-                echo "export WINE_PATH=\"$folder\""
-                echo "export WINEPREFIX=\"$folder/.wine\""
+            echo "export WINE_PATH=\"$folder\""
+            echo "export WINEPREFIX=\"$folder/.wine\""
             } > "$path"
             dialog --title "Смена Wine" --msgbox "Выбран $folder_name" 5 40
             ;;
@@ -234,66 +234,66 @@ DXVK:             $DXVK_WOW \n\
                 1)
 # Переключение ALIGNED_ATOMICS
                 if [ "$ALIGNED_ATOMICS" == "0" ]; then
-                            ALIGNED_ATOMICS="1"
+                    ALIGNED_ATOMICS="1"
                 elif [ "$ALIGNED_ATOMICS" == "1" ]; then
-                            ALIGNED_ATOMICS="-"
+                    ALIGNED_ATOMICS="-"
                 elif [ "$ALIGNED_ATOMICS" == "-" ]; then
-                            ALIGNED_ATOMICS="0"
+                    ALIGNED_ATOMICS="0"
                 fi ;;
                 2)
 # Логика для BIGBLOCK_64
                 if [ "$BIGBLOCK_64" == "0" ]; then
-                            BIGBLOCK_64="1"
+                    BIGBLOCK_64="1"
                 elif [ "$BIGBLOCK_64" == "1" ]; then
-                            BIGBLOCK_64="2"
+                    BIGBLOCK_64="2"
                 elif [ "$BIGBLOCK_64" == "2" ]; then
-                            BIGBLOCK_64="-"
+                    BIGBLOCK_64="-"
                 elif [ "$BIGBLOCK_64" == "-" ]; then
-                            BIGBLOCK_64="0"
+                    BIGBLOCK_64="0"
                 fi ;;
                 3)
 # Логика для BIGBLOCK_64
                 if [ "$BIGBLOCK_86" == "0" ]; then
-                            BIGBLOCK_86="1"
+                    BIGBLOCK_86="1"
                 elif [ "$BIGBLOCK_86" == "1" ]; then
-                            BIGBLOCK_86="2"
+                    BIGBLOCK_86="2"
                 elif [ "$BIGBLOCK_86" == "2" ]; then
-                            BIGBLOCK_86="-"
+                    BIGBLOCK_86="-"
                 elif [ "$BIGBLOCK_86" == "-" ]; then
-                            BIGBLOCK_86="0"
+                    BIGBLOCK_86="0"
                 fi ;;
                 4)
 # Переключение FASTNAN
                 if [ "$FASTNAN" == "0" ]; then
-                            FASTNAN="1"
+                    FASTNAN="1"
                 elif [ "$FASTNAN" == "1" ]; then
-                            FASTNAN="-"
+                    FASTNAN="-"
                 elif [ "$FASTNAN" == "-" ]; then
-                            FASTNAN="0"
+                    FASTNAN="0"
                 fi ;;
                 5)
 # Переключение SAFEFLAGS
                 if [ "$SAFEFLAGS" == "0" ]; then
-                            SAFEFLAGS="1"
+                    SAFEFLAGS="1"
                 elif [ "$SAFEFLAGS" == "1" ]; then
-                            SAFEFLAGS="2"
+                    SAFEFLAGS="2"
                 elif [ "$SAFEFLAGS" == "2" ]; then
-                            SAFEFLAGS="-"
+                    SAFEFLAGS="-"
                 elif [ "$SAFEFLAGS" == "-" ]; then
-                            SAFEFLAGS="0"
+                    SAFEFLAGS="0"
                 fi ;;
                 6)
 # Переключение STRONGMEM
                 if [ "$STRONGMEM" == "0" ]; then
-                            STRONGMEM="1"
+                    STRONGMEM="1"
                 elif [ "$STRONGMEM" == "1" ]; then
-                            STRONGMEM="2"
+                    STRONGMEM="2"
                 elif [ "$STRONGMEM" == "2" ]; then
-                            STRONGMEM="3"
+                    STRONGMEM="3"
                 elif [ "$STRONGMEM" == "3" ]; then
-                            STRONGMEM="-"
+                    STRONGMEM="-"
                 elif [ "$STRONGMEM" == "-" ]; then
-                            STRONGMEM="0"
+                    STRONGMEM="0"
                 fi ;;
                 7)
 # Переключение WAIT
@@ -800,31 +800,31 @@ DXVK:             $DXVK_WOW \n\
                 1)
 # Переключение ALIGNED_ATOMICS
                 if [ "$ATOMICS_WOW" == "0" ]; then
-                            ATOMICS_WOW="1"
+                    ATOMICS_WOW="1"
                 elif [ "$ALIGNED_ATOMICS" == "1" ]; then
-                            ATOMICS_WOW="-"
+                    ATOMICS_WOW="-"
                 elif [ "$ATOMICS_WOW" == "-" ]; then
-                            ATOMICS_WOW="0"
+                    ATOMICS_WOW="0"
                 fi ;;
                 2)
 # Логика для BIGBLOCK_64
                 if [ "$BIGS64_WOW" == "0" ]; then
-                            BIGS64_WOW="1"
+                    BIGS64_WOW="1"
                 elif [ "$BIGS64_WOW" == "1" ]; then
-                            BIGBLOCK_64="2"
+                    BIGBLOCK_64="2"
                 elif [ "$BIGS64_WOW" == "2" ]; then
-                            BIGS64_WOW="-"
+                    BIGS64_WOW="-"
                 elif [ "$BIGS64_WOW" == "-" ]; then
-                            BIGS64_WOW="0"
+                    BIGS64_WOW="0"
                 fi ;;
                 3)
 # Переключение FASTNAN_WOW
                 if [ "$FASTNAN_WOW" == "0" ]; then
                     FASTNAN_WOW="1"
                 elif [ "$FASTNAN_WOW" == "1" ]; then
-                            FASTNAN_WOW="-"
+                    FASTNAN_WOW="-"
                 elif [ "$FASTNAN_WOW" == "-" ]; then
-                            FASTNAN_WOW="0"
+                    FASTNAN_WOW="0"
                 fi ;;
                 4)
 # Переключение SAFEFLAGS_WOW
@@ -840,15 +840,15 @@ DXVK:             $DXVK_WOW \n\
                 5)
 # Переключение STRONGMEM_WOW
                 if [ "$STRONGMEM_WOW" == "0" ]; then
-                            STRONGMEM_WOW="1"
+                    STRONGMEM_WOW="1"
                 elif [ "$STRONGMEM_WOW" == "1" ]; then
-                            STRONGMEM_WOW="2"
+                    STRONGMEM_WOW="2"
                 elif [ "$STRONGMEM_WOW" == "2" ]; then
-                            STRONGMEM_WOW="3"
+                    STRONGMEM_WOW="3"
                 elif [ "$STRONGMEM_WOW" == "3" ]; then
-                            STRONGMEM_WOW="-"
+                    STRONGMEM_WOW="-"
                 elif [ "$STRONGMEM_WOW" == "-" ]; then
-                            STRONGMEM_WOW="0"
+                    STRONGMEM_WOW="0"
                 fi ;;
                 6)
 # Переключение WAIT
