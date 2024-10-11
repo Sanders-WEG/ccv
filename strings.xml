@@ -1,13 +1,29 @@
 #!/bin/bash
 clear
 
+export CONFIG_SETTINGS_GAME=Launcher.lnk
 
 result="${CONFIG_GAME%.lnk}"
-CONFIG="$HOME/2"
-CONFIG_x86="$HOME/1"
+file_path="$PREFIX/glibc/opt/scripts/mobox_menu"
+value=$(grep 'Mobox' "$file_path" | sed -E 's/.*Mobox([^"]*).*/\1/')
+
+# Set Wine directory based on existence of directories
+if [ -n "$value" ]; then
+    wine="$PREFIX/glibc"
+elif [ -d "$PREFIX/glibc-wow64" ]; then
+    wine="$PREFIX/glibc-wow64"
+else
+    dialog --title "Ошибка" --msgbox "Wine directories не найдены." 5 40
+    exit 1
+fi
+
+path="$PREFIX/glibc/opt/conf/wine_path.conf"
+
+CONFIG="$PREFIX/mobox/set_game/$CONFIG_GAME"
+CONFIG_x86="$PREFIX/mobox/set_game/x86/$CONFIG_GAME"
 CONFIG_x64="$PREFIX/mobox/set_game/x64/$CONFIG_GAME"
 
-# Проверка существования конфигурационных файлов
+# Load configuration files if they exist
 [ -f "$CONFIG" ] && source "$CONFIG"
 [ -f "$CONFIG_x64" ] && source "$CONFIG_x64"
 [ -f "$CONFIG_x86" ] && source "$CONFIG_x86"
@@ -18,6 +34,71 @@ function show_dialog {
     shift 2
     dialog --title "$title" --menu "$text" 27 41 "$@" 2>&1 >/dev/tty
 }
+
+# Function to select a folder
+select_folder() {
+    local menu_items=()
+    local count=1
+
+    for folder in "$wine"/wine*/; do
+        if [ -d "$folder" ]; then
+            menu_items+=("$count" "$(basename "$folder")")
+            ((count++))
+        fi
+    done
+
+    if [ ${#menu_items[@]} -eq 0 ]; then
+        dialog --title "Ошибка" --msgbox "Нет папок, начинающихся с 'wine'." 5 40
+        show_main_menu
+        return
+    fi
+
+    folder_number=$(dialog --title "Выберите папку" --menu "Выберите папку:" 15 50 10 "${menu_items[@]}" 3>&1 1>&2 2>&3)
+    case $? in
+        1) show_main_menu ;;  # Cancel pressed
+        255) return ;;  # Ignore return 255
+    esac
+
+    folder_name=$(printf "%s\n" "${menu_items[@]}" | sed -n "${folder_number}p" | awk '{print $2}')
+    choose_action "$wine/$folder_name"
+}
+
+# Function to choose action for the selected folder
+choose_action() {
+    local folder=$1
+    local folder_name=$(basename "$folder")
+
+    action=$(dialog --title "Выбор действия" --menu "Выберите действие для $folder_name:" 15 50 3 \
+        1 "Выбрать Wine" \
+        2 "Вернуться в главное меню" 3>&1 1>&2 2>&3)
+    
+    case $? in
+        1) return ;;  # Cancel pressed
+        255) return ;;  # Ignore return 255
+    esac
+
+    case $action in
+        1)
+            {
+                echo "export WINE_PATH=\"$folder\""
+                echo "export WINEPREFIX=\"$folder/.wine\""
+            } > "$path"
+            dialog --title "Смена Wine" --msgbox "Выбран $folder_name" 5 40
+            ;;
+        2) return ;;  # Return to main menu
+    esac
+}
+
+# Function to display a dialog
+display_menu() {
+    local title="$1"
+    local text="$2"
+    shift 2
+    dialog --title "$title" --menu "$text" 27 41 "$@" 2>&1 >/dev/tty
+}
+
+
+
 
 while true; do
     if [ "$BOX_VERS" == "X86" ]; then
@@ -69,6 +150,7 @@ DXVK:             $DXVK_WOW \n\
         )
     elif [ "$BOX_VERS" == "WOW64" ]; then
         options+=(
+            "  " "Выбрать версию Wine" \
             "2" "Настроить DYNAREC" \
             "3" "Выбрать Turnip" \
             "4" "Выбрать DXVK" \
@@ -97,24 +179,39 @@ DXVK:             $DXVK_WOW \n\
             fi
             exit
             ;;
-        1.)
+        
+        "  ")
+            # Основной код
+            if [ -d "$wine" ]; then
+                select_folder 
+            else
+                echo "Wine directory does not exist."
+            fi
+            ;;
+        
+        1.) while true; do
             BOX_VERS_CHOICE=$(show_dialog "Mobox" "Выберите версию:" 3 \
                 "1" "Mobox box86" \
                 "2" "Mobox WoW64")
 
             case $? in
-                1) continue ;;  # Игнорируем отмену
+                1) break ;;  # Выход при нажатии Cancel
             esac
 
             case $BOX_VERS_CHOICE in
-                1) sed -i '1s/.*/BOX_VERS=X86/' "$CONFIG" 
-                BOX_VERS="x86"
-                ;;
-                2) sed -i '1s/.*/BOX_VERS=WOW64/' "$CONFIG" 
-                BOX_VERS="WOW64"
-                ;;
+                1) 
+                    sed -i '1s/.*/BOX_VERS=X86/' "$CONFIG"
+                    BOX_VERS="X86"
+                    break
+                    ;;
+                2) 
+                    sed -i '1s/.*/BOX_VERS=WOW64/' "$CONFIG"
+                    BOX_VERS="WOW64"
+                    break
+                    ;;
             esac
-            ;;
+        done
+        ;;
         2.)
             while true; do
                 dynarec_choice=$(show_dialog "Настройки DYNAREC" " " 11 \
@@ -210,20 +307,20 @@ DXVK:             $DXVK_WOW \n\
                 8)
 # Переключение X87DOUBLE
                 if [ "$X87DOUBLE" == "0" ]; then
-                    X87DOUBLE= "1"
+                    X87DOUBLE="1"
                 elif [ "$X87DOUBLE" == "1" ]; then
-                    X87DOUBLE= "-"
+                    X87DOUBLE="-"
                 elif [ "$X87DOUBLE" == "-" ]; then
-                    X87DOUBLE= "0"
+                    X87DOUBLE="0"
                 fi ;;
                 9)
 # Переключение CALLRET
                 if [ "$CALLRET" == "0" ]; then
-                    CALLRET= "1"
+                    CALLRET="1"
                 elif [ "$CALLRET" == "1" ]; then
-                    CALLRET= "-"
+                    CALLRET="-"
                 elif [ "$CALLRET" == "-" ]; then
-                    CALLRET= "0"
+                    CALLRET="0"
                 fi ;;
                 10)
 # Сброс к значениям по умолчанию
@@ -421,7 +518,7 @@ DXVK:             $DXVK_WOW \n\
                 TURNIP_86="-virgl-mesa-24";;
             esac
 # Запись в 43 строчку файла $CONFIG
-            sed -i "26s/.*/TURNIP_86=${TURNIP_86}/" "$CONFIG_x86";;
+            sed -i "27s/.*/TURNIP_86=${TURNIP_86}/" "$CONFIG_x86";;
             
         4.)
             DXVK_CHOICE=$(dialog --title "Выберите DXVK" --menu " " 22 40 5 \
@@ -477,7 +574,7 @@ DXVK:             $DXVK_WOW \n\
                 15) 
                 DXVK_86="-wined3d-8.20";;
             esac
-            sed -i "27s/.*/DXVK_86=${DXVK_86}/" "$CONFIG_x86";;
+            sed -i "28s/.*/DXVK_86=${DXVK_86}/" "$CONFIG_x86";;
         5.) 
             DX_VER_CHOICE=$(dialog --title "Выберите максимальный DirectX" --menu " " 16 40 5 \
             "1" "DirectX 9.1" \
@@ -515,7 +612,7 @@ DXVK:             $DXVK_WOW \n\
                 DX_VER_86="12_1";;
             esac
 
-            sed -i "28s/.*/DX_VER_86=${DX_VER_86}/" "$CONFIG_x86";;
+            sed -i "29s/.*/DX_VER_86=${DX_VER_86}/" "$CONFIG_x86";;
             
         6.)
             RES_GAME_CHOICE=$(dialog --title "Выберите разрешение экрана" --menu "\n
@@ -609,7 +706,7 @@ DXVK:             $DXVK_WOW \n\
                 27) 
                 RESOLUTION_86="1920x1080";;
             esac
-            sed -i "29s/.*/RESOLUTION_86=${RESOLUTION_86}/" "$CONFIG_x86";;
+            sed -i "30s/.*/RESOLUTION_86=${RESOLUTION_86}/" "$CONFIG_x86";;
                 
         7.) 
             CORES_CHOICE=$(dialog --title "Выберите количество ядер" --menu " " 13 40 3 \
@@ -650,7 +747,9 @@ DXVK:             $DXVK_WOW \n\
                 SECONDARY_86=0-5
                 CORES_86="6-7";;
             esac
-            sed -i "30s/.*/PRIMARY_86=${PRIMARY_86}/" "$CONFIG_x86";;
+            sed -i "31s/.*/PRIMARY_86=${PRIMARY_86}/" "$CONFIG_x86"
+            sed -i "32s/.*/SECONDARY_86=${SECONDARY_86}/" "$CONFIG_x86"
+            sed -i "33s/.*/CORES_86=${CORES_86}/" "$CONFIG_x86";;
                 
         8.)
             while true; do
@@ -667,7 +766,7 @@ DXVK:             $DXVK_WOW \n\
             if (( FPS_LIM_CHOICE % 5 == 0 )); then
             FPS_LIM_86="$FPS_LIM_CHOICE"
             # Запись значения в 45-ю строку файла
-            sed -i "31s/.*/FPS_LIM_86=${FPS_LIM_86}/" "$CONFIG_x86"
+            sed -i "34s/.*/FPS_LIM_86=${FPS_LIM_86}/" "$CONFIG_x86"
             break
             else
             dialog --msgbox "Ошибка: Пожалуйста, введите число, кратное 5." 10 30
@@ -675,9 +774,11 @@ DXVK:             $DXVK_WOW \n\
             else
             dialog --msgbox "Ошибка: Пожалуйста, введите число от 15 до 240 или 0." 10 30
             fi
-            done ;;
+        done
+    ;;
 ###########################
 ########   WOW64  #########
+        
         2)
             while true; do
                 dynarec_choice=$(show_dialog "Настройки DYNAREC" " " 11 \
@@ -842,7 +943,7 @@ DXVK:             $DXVK_WOW \n\
                 sed -i '4s/.*/unset BOX64_DYNAREC_BIGBLOCK/' "$CONFIG_x64" ;;
                 esac
                 
-                case ${FASTNAN} in
+                case ${FASTNAN_WOW} in
                 0)
                 sed -i '5s/.*/FASTNAN_WOW=0/' "$CONFIG_x64"
                 sed -i '6s/.*/export BOX64_DYNAREC_FASTNAN=0/' "$CONFIG_x64" ;;
@@ -854,18 +955,18 @@ DXVK:             $DXVK_WOW \n\
                 sed -i '6s/.*/unset BOX64_DYNAREC_FASTNAN/' "$CONFIG_x64";;
                 esac
                 
-                case ${SAFEFLAGS} in
+                case ${SAFEFLAGS_W} in
                 0)
-                sed -i '7s/.*/SAFEFLAGS=0/' "$CONFIG_x64"
+                sed -i '7s/.*/SAFEFLAGS_WOW=0/' "$CONFIG_x64"
                 sed -i '8s/.*/export BOX64_DYNAREC_SAFEFLAGS=0/' "$CONFIG_x64";;
                 1)
-                sed -i '7s/.*/SAFEFLAGS=1/' "$CONFIG_x64"
+                sed -i '7s/.*/SAFEFLAGS_WOW=1/' "$CONFIG_x64"
                 sed -i '8s/.*/export BOX64_DYNAREC_SAFEFLAGS=1/' "$CONFIG_x64";;
                 2)
-                sed -i '7s/.*/SAFEFLAGS=2/' "$CONFIG_x64"
+                sed -i '7s/.*/SAFEFLAGS_WOW=2/' "$CONFIG_x64"
                 sed -i '8s/.*/export BOX64_DYNAREC_SAFEFLAGS=2/' "$CONFIG_x64";;
                 -)
-                sed -i '7s/.*/SAFEFLAGS=-/' "$CONFIG_x64"
+                sed -i '7s/.*/SAFEFLAGS_WOW=-/' "$CONFIG_x64"
                 sed -i '8s/.*/unset BOX64_DYNAREC_SAFEFLAGS/' "$CONFIG_x64";;
                 esac
                 
@@ -946,70 +1047,69 @@ DXVK:             $DXVK_WOW \n\
                 sed -i '19s/.*/IGNOREINT3_WOW=-/' "$CONFIG_x64"
                 sed -i '20s/.*/unset BOX64_IGNOREINT3/' "$CONFIG_x64" ;;
                 esac
-        done
+            done
+            ;;
+            
+# Аналогичные блоки для обновления других параметров...
+
         3)
-            TURNIP_CHOICE=$(dialog --title "Выберите Turnip" --menu " " 16 40 3 \
-                "1" "Turnip Zink v2" \
+            TURNIP_CHOICE_64=$(dialog --title "Выберите Turnip" --menu " " 14 40 3 \
+                "1" "Turnip Zink v3" \
                 "2" "Turnip Zinc v3.5" \
                 "3" "Turnip Zinc v4" \
-                "4" "Turnip Zinc v5" \
-                "5" "Turnip Zinc v6.5" \
-                "6" "VirGL Mesa 18.3.0" \
-                "7" "VirGL Mesa 19.1.8" \
-                "8" "VirGL Mesa 22.1.7" \
-                "9" "VirGL Mesa 24.0.0" 2>&1 >/dev/tty)
+                "4" "VirGL Mesa 18.3.0" \
+                "5" "VirGL Mesa 19.1.8" \
+                "6" "VirGL Mesa 22.1.7" \
+                "7" "VirGL Mesa 24.0.0" 2>&1 >/dev/tty)
 
             case $? in
                 1) continue ;;  # Игнорируем отмену
             esac
 
-            case $TURNIP_CHOICE in
+            case $TURNIP_CHOICE_64 in
                 1) 
-               TURNIP_WOW="-zink-v2" ;;
+                TURNIP_WOW="-v3";;
                 2) 
-                TURNIP_WOW="-zink-v3.5";;
+                TURNIP_WOW="-v3.5";;
                 3) 
-                TURNIP_WOW="-zink-v4";;
+                TURNIP_WOW="-v4";;
                 4) 
-                TURNIP_WOW="-zink-v5";;
+                TURNIP_WOW="-virgl-mesa-18";;
                 5) 
-                TURNIP_WOW="-zink-v6.5";;
+                TURNIP_WOW="-virgl-mesa-19";;
                 6) 
-               TURNIP_WOW="-virgl_mesa-18.3.0";;
+                TURNIP_WOW="-virgl-mesa-22";;
                 7) 
-                TURNIP_WOW="-virgl_mesa-19.1.8";;
-                8) 
-               TURNIP_WOW="-virgl_mesa-22.1.7";;
-                9) 
-               TURNIP_WOW="-virgl_mesa-24.0.0";;
+                TURNIP_WOW="-virgl-mesa-24";;
             esac
-            sed -i "21s/.*/TURNIP_86=${TURNIP_64}/" "$CONFIG_x64";;
+# Запись в 43 строчку файла $CONFIG
+            sed -i "22s/.*/TURNIP_WOW=${TURNIP_WOW}/" "$CONFIG_x64";;
             
         4)
-            DXVK_CHOICE=$(dialog --title "Выберите DXVK" --menu " " 22 40 5 \
-                "1" "dxvk-d8vk-1.0" \
-                "2" "dxvk-0.96" \
-                "3" "dxvk-1.6.1" \
-                "4" "dxvk-async-1.10.3" \
-                "5" "dxvk-dev" \
-                "6" "dxvk-async-2.0" \
-                "7" "dxvk-gplasync-2.2" \
-                "8" "dxvk-gplasync-2.3" \
-                "9" "vkd3d" \
-                "10" "wined3d-4.13" \
-                "11" "wined3d-7.2" \
-                "12" "wined3d-7.21" \
-                "13" "wined3d-7.8" \
-                "14" "wined3d-8.0.2" \
-                "15" "wined3d-8.20" 2>&1 >/dev/tty)
+            DXVK_CHOICE_64=$(dialog --title "Выберите DXVK" --menu " " 22 40 5 \
+            "1" "dxvk-d8vk-1.0" \
+            "2" "dxvk-0.96" \
+            "3" "dxvk-1.6.1" \
+            "4" "dxvk-async-1.10.3" \
+            "5" "dxvk-dev" \
+            "6" "dxvk-async-2.0" \
+            "7" "dxvk-gplasync-2.2" \
+            "8" "dxvk-gplasync-2.3" \
+            "9" "vkd3d" \
+            "10" "wined3d-4.13" \
+            "11" "wined3d-7.2" \
+            "12" "wined3d-7.21" \
+            "13" "wined3d-7.8" \
+            "14" "wined3d-8.0.2" \
+            "15" "wined3d-8.20" 2>&1 >/dev/tty)
 
             case $? in
                 1) continue ;;  
             esac
             
-            case $DXVK_CHOICE in
+            case $DXVK_CHOICE_64 in
                 1) 
-               DXVK_WOW="-d8vk";;
+                DXVK_WOW="-d8vk";;
                 2) 
                 DXVK_WOW="-0.96";;
                 3) 
@@ -1040,24 +1140,23 @@ DXVK:             $DXVK_WOW \n\
                 DXVK_WOW="-wined3d-8.20";;
             esac
             sed -i "23s/.*/DXVK_WOW=${DXVK_WOW}/" "$CONFIG_x64";;
-            
         5) 
-            DX_VER_CHOICE=$(dialog --title "Выберите максимальный DirectX" --menu " " 16 40 5 \
-                "1" "DirectX 9.1" \
-                "2" "DirectX 9.2" \
-                "3" "DirectX 9.3" \
-                "4" "DirectX 10.0" \
-                "5" "DirectX 10.1" \
-                "6" "DirectX 11.0" \
-                "7" "DirectX 11.1" \
-                "8" "DirectX 12.0" \
-                "9" "DirectX 12.1" 2>&1 >/dev/tty)
+            DX_VER_CHOICE_64=$(dialog --title "Выберите максимальный DirectX" --menu " " 16 40 5 \
+            "1" "DirectX 9.1" \
+            "2" "DirectX 9.2" \
+            "3" "DirectX 9.3" \
+            "4" "DirectX 10.0" \
+            "5" "DirectX 10.1" \
+            "6" "DirectX 11.0" \
+            "7" "DirectX 11.1" \
+            "8" "DirectX 12.0" \
+            "9" "DirectX 12.1" 2>&1 >/dev/tty)
 
             case $? in
                 1) continue ;;  # Игнорируем отмену
             esac
 
-            case $DX_VER_CHOICE in
+            case $DX_VER_CHOICE_64 in
                 1) 
                 DX_VER_WOW="9_1";;
                 2) 
@@ -1077,47 +1176,48 @@ DXVK:             $DXVK_WOW \n\
                 9) 
                 DX_VER_WOW="12_1";;
             esac
-            sed -i "25s/.*/DX_VER_WOW=${DX_VER_WOW}/" "$CONFIG_x64";;
+
+            sed -i "24s/.*/DX_VER_WOW=${DX_VER_WOW}/" "$CONFIG_x64";;
             
-            6)
-            RES_GAME_CHOICE=$(dialog --title "Выберите разрешение экрана" --menu "\n
+        6)
+            RES_GAME_CHOICE_64=$(dialog --title "Выберите разрешение экрана" --menu "\n
 Внимание:\n
 Выставить такое же разрешение экрана и в Termux-x11 или WEG™:x11" 27 40 5 \
-                "1"  "Ручной ввод (WxH)" \
-                "2"  "320x200     (16:10)" \
-                "3"  "320x240     (4:3)" \
-                "4"  "320×256     (5:4)" \
-                "5"  "400x240     (5:3)" \
-                "6"  "640x360     (16:9)" \
-                "7"  "640x400     (16:10)" \
-                "8"  "640x480     (4:3)" \
-                "9"  "800x480     (5:3)" \
-                "10" "800x600     (4:3)" \
-                "11" "854x480     (16:9)" \
-                "12" "960x540     (16:9)" \
-                "13" "1024x576    (16:9)" \
-                "14" "1024x768    (4:3)" \
-                "15" "1152x648    (16:9)" \
-                "16" "1152x720    (16:10)" \
-                "17" "1200x648    (16:9)" \
-                "18" "1280x720    (16:9)" \
-                "19" "1280x800    (16:10)" \
-                "20" "1280x960    (4:3)" \
-                "21" "1280x1024   (5:4)" \
-                "22" "1400x1080   (4:3)" \
-                "23" "1600x900    (16:9)" \
-                "24" "1640x1025   (16:10)" \
-                "25" "1680x1050   (16:10)" \
-                "26" "1920x1080   (16:9)" \
-                "27" "1920x1200   (16:10)"  2>&1 >/dev/tty)
+            "1"  "Ручной ввод (WxH)" \
+            "2"  "320x200     (16:10)" \
+            "3"  "320x240     (4:3)" \
+            "4"  "320×256     (5:4)" \
+            "5"  "400x240     (5:3)" \
+            "6"  "640x360     (16:9)" \
+            "7"  "640x400     (16:10)" \
+            "8"  "640x480     (4:3)" \
+            "9"  "800x480     (5:3)" \
+            "10" "800x600     (4:3)" \
+            "11" "854x480     (16:9)" \
+            "12" "960x540     (16:9)" \
+            "13" "1024x576    (16:9)" \
+            "14" "1024x768    (4:3)" \
+            "15" "1152x648    (16:9)" \
+            "16" "1152x720    (16:10)" \
+            "17" "1200x648    (16:9)" \
+            "18" "1280x720    (16:9)" \
+            "19" "1280x800    (16:10)" \
+            "20" "1280x960    (4:3)" \
+            "21" "1280x1024   (5:4)" \
+            "22" "1400x1080   (4:3)" \
+            "23" "1600x900    (16:9)" \
+            "24" "1640x1025   (16:10)" \
+            "25" "1680x1050   (16:10)" \
+            "26" "1920x1080   (16:9)" \
+            "27" "1920x1200   (16:10)"  2>&1 >/dev/tty)
 
             case $? in
                 1) continue ;;  # Игнорируем отмену
             esac
 
-            case $RES_GAME_CHOICE in
+            case $RES_GAME_CHOICE_64 in
                 1)
-                set_resolution_wow;;
+                set_resolution_WOW;;
                 2) 
                 RESOLUTION_WOW="320x200";;
                 3) 
@@ -1133,7 +1233,7 @@ DXVK:             $DXVK_WOW \n\
                 8) 
                 RESOLUTION_WOW="640x480";;
                 9) 
-                RESOLUTION_WOW=;"800x480";;
+                RESOLUTION_WOW="800x480";;
                 10) 
                 RESOLUTION_WOW="800x600";;
                 11) 
@@ -1169,14 +1269,12 @@ DXVK:             $DXVK_WOW \n\
                 26) 
                 RESOLUTION_WOW="1920x1080";;
                 27) 
-                RESOLUTION_WOW="1920x1200";;
+                RESOLUTION_WOW="1920x1080";;
             esac
-            sed -i "26s/.*/RESOLUTION_WOW=${RESOLUTION_WOW}/" "$CONFIG_x64";;
-            dialog --msgbox "Внимание \n\n
-Выберите разрешение $RESOLUTION_WOW в Termux:x11 или WEG™:x11" 10 30 ;;
-            
+            sed -i "25s/.*/RESOLUTION_WOW=${RESOLUTION_WOW}/" "$CONFIG_x64";;
+                
         7) 
-            CORES_CHOICE=$(dialog --title "Выберите количество ядер" --menu " " 13 40 3 \
+            CORES_CHOICE_64=$(dialog --title "Выберите количество ядер" --menu " " 13 40 3 \
             "1" "с 1 по 7" \
             "2" "с 2 по 7" \
             "3" "с 3 по 7" \
@@ -1188,7 +1286,7 @@ DXVK:             $DXVK_WOW \n\
                 1) continue ;;  # Игнорируем отмену
             esac
 
-            case $CORES_CHOICE in
+            case $CORES_CHOICE_64 in
                 1) 
                 PRIMARY_WOW=1-7
                 SECONDARY_WOW=0-1
@@ -1214,23 +1312,26 @@ DXVK:             $DXVK_WOW \n\
                 SECONDARY_WOW=0-5
                 CORES_WOW="6-7";;
             esac
-            sed -i "27s/.*/PRIMARY_WOW=${PRIMARY_WOW}/" "$CONFIG_x64";;
-            
+            sed -i "25s/.*/PRIMARY_WOW=${PRIMARY_WOW}/" "$CONFIG_x64"
+            sed -i "27s/.*/SECONDARY_WOW=${SECONDARY_WOW}/" "$CONFIG_x64"
+            sed -i "28s/.*/CORES_WOW=${CORES_WOW}/" "$CONFIG_x64";;
+                
         8)
             while true; do
 # Ввод значения FPS
-            FPS_LIM_CHOICE=$(dialog --title "Выберите лимит FPS" --inputbox "Введите максимальное значение FPS кратное 5 (от 15 до 240 или 0):\n\n0 - без ограничения" 12 40 $FPS_LIM_WOW 2>&1 >/dev/tty)
+            FPS_LIM_CHOICE_64=$(dialog --title "Выберите лимит FPS" --inputbox "Введите максимальное значение FPS кратное 5 (от 15 до 240 или 0):\n\n0 - без ограничения" 12 40 $FPS_LIM_WOW 2>&1 >/dev/tty)
+    
             case $? in
             1) continue ;;  # Игнорируем отмену
             esac
     
 # Проверка, является ли введенное значение числом и находится ли оно в допустимом диапазоне
-            if [[ "$FPS_LIM_CHOICE" =~ ^[0-9]+$ ]] && [ "$FPS_LIM_CHOICE" -eq 0 ] || [ "$FPS_LIM_CHOICE" -ge 15 ] && [ "$FPS_LIM_CHOICE" -le 240 ]; then
+            if [[ "$FPS_LIM_CHOICE_64" =~ ^[0-9]+$ ]] && [ "$FPS_LIM_CHOICE_64" -eq 0 ] || [ "$FPS_LIM_CHOICE_64" -ge 15 ] && [ "$FPS_LIM_CHOICE_64" -le 240 ]; then
 # Проверка, кратно ли значение 5
             if (( FPS_LIM_CHOICE % 5 == 0 )); then
-            FPS_LIM_86="$FPS_LIM_CHOICE"
+            FPS_LIM_WOW="$FPS_LIM_CHOICE_64"
             # Запись значения в 45-ю строку файла
-            sed -i "28s/.*/FPS_LIM_86=${FPS_LIM_WOW}/" "$CONFIG_x64"
+            sed -i "29s/.*/FPS_LIM_WOW=${FPS_LIM_WOW}/" "$CONFIG_x64"
             break
             else
             dialog --msgbox "Ошибка: Пожалуйста, введите число, кратное 5." 10 30
@@ -1238,6 +1339,7 @@ DXVK:             $DXVK_WOW \n\
             else
             dialog --msgbox "Ошибка: Пожалуйста, введите число от 15 до 240 или 0." 10 30
             fi
-            done ;;
+        
+        done
     esac
 done
