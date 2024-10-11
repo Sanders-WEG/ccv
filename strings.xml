@@ -80,8 +80,8 @@ choose_action() {
     case $action in
         1)
             {
-            echo "export WINE_PATH=\"$folder\""
-            echo "export WINEPREFIX=\"$folder/.wine\""
+                echo "export WINE_PATH=\"$folder\""
+                echo "export WINEPREFIX=\"$folder/.wine\""
             } > "$path"
             dialog --title "Смена Wine" --msgbox "Выбран $folder_name" 5 40
             ;;
@@ -234,66 +234,66 @@ DXVK:             $DXVK_WOW \n\
                 1)
 # Переключение ALIGNED_ATOMICS
                 if [ "$ALIGNED_ATOMICS" == "0" ]; then
-                    ALIGNED_ATOMICS="1"
+                            ALIGNED_ATOMICS="1"
                 elif [ "$ALIGNED_ATOMICS" == "1" ]; then
-                    ALIGNED_ATOMICS="-"
+                            ALIGNED_ATOMICS="-"
                 elif [ "$ALIGNED_ATOMICS" == "-" ]; then
-                    ALIGNED_ATOMICS="0"
+                            ALIGNED_ATOMICS="0"
                 fi ;;
                 2)
 # Логика для BIGBLOCK_64
                 if [ "$BIGBLOCK_64" == "0" ]; then
-                    BIGBLOCK_64="1"
+                            BIGBLOCK_64="1"
                 elif [ "$BIGBLOCK_64" == "1" ]; then
-                    BIGBLOCK_64="2"
+                            BIGBLOCK_64="2"
                 elif [ "$BIGBLOCK_64" == "2" ]; then
-                    BIGBLOCK_64="-"
+                            BIGBLOCK_64="-"
                 elif [ "$BIGBLOCK_64" == "-" ]; then
-                    BIGBLOCK_64="0"
+                            BIGBLOCK_64="0"
                 fi ;;
                 3)
 # Логика для BIGBLOCK_64
                 if [ "$BIGBLOCK_86" == "0" ]; then
-                    BIGBLOCK_86="1"
+                            BIGBLOCK_86="1"
                 elif [ "$BIGBLOCK_86" == "1" ]; then
-                    BIGBLOCK_86="2"
+                            BIGBLOCK_86="2"
                 elif [ "$BIGBLOCK_86" == "2" ]; then
-                    BIGBLOCK_86="-"
+                            BIGBLOCK_86="-"
                 elif [ "$BIGBLOCK_86" == "-" ]; then
-                    BIGBLOCK_86="0"
+                            BIGBLOCK_86="0"
                 fi ;;
                 4)
 # Переключение FASTNAN
                 if [ "$FASTNAN" == "0" ]; then
-                    FASTNAN="1"
+                            FASTNAN="1"
                 elif [ "$FASTNAN" == "1" ]; then
-                    FASTNAN="-"
+                            FASTNAN="-"
                 elif [ "$FASTNAN" == "-" ]; then
-                    FASTNAN="0"
+                            FASTNAN="0"
                 fi ;;
                 5)
 # Переключение SAFEFLAGS
                 if [ "$SAFEFLAGS" == "0" ]; then
-                    SAFEFLAGS="1"
+                            SAFEFLAGS="1"
                 elif [ "$SAFEFLAGS" == "1" ]; then
-                    SAFEFLAGS="2"
+                            SAFEFLAGS="2"
                 elif [ "$SAFEFLAGS" == "2" ]; then
-                    SAFEFLAGS="-"
+                            SAFEFLAGS="-"
                 elif [ "$SAFEFLAGS" == "-" ]; then
-                    SAFEFLAGS="0"
+                            SAFEFLAGS="0"
                 fi ;;
                 6)
 # Переключение STRONGMEM
                 if [ "$STRONGMEM" == "0" ]; then
-                    STRONGMEM="1"
+                            STRONGMEM="1"
                 elif [ "$STRONGMEM" == "1" ]; then
-                    STRONGMEM="2"
+                            STRONGMEM="2"
                 elif [ "$STRONGMEM" == "2" ]; then
-                    STRONGMEM="3"
+                            STRONGMEM="3"
                 elif [ "$STRONGMEM" == "3" ]; then
-                    STRONGMEM="-"
+                            STRONGMEM="-"
                 elif [ "$STRONGMEM" == "-" ]; then
-                    STRONGMEM="0"
+                            STRONGMEM="0"
                 fi ;;
                 7)
 # Переключение WAIT
@@ -645,7 +645,25 @@ DXVK:             $DXVK_WOW \n\
             "25" "1680x1050   (16:10)" \
             "26" "1920x1080   (16:9)" \
             "27" "1920x1200   (16:10)"  2>&1 >/dev/tty)
+            
+    set_resolution_86() {
+    # Запрос разрешения экрана у пользователя
+    RESOLUTION_86=$(dialog --inputbox "Введите разрешение экрана (например, 960x540):" 8 40 2>&1 >/dev/tty)
 
+    # Проверка нажатия кнопки "Отмена"
+    if [ $? -ne 0 ]; then
+        echo "Вы отменили выбор разрешения."
+        return
+    fi
+    # Проверка формата разрешения
+    if [[ ! "$RESOLUTION_86" =~ ^[0-9]+x[0-9]+$ ]]; then
+        dialog --msgbox "Неверный формат разрешения. Пожалуйста, введите в формате WIDTHxHEIGHT (например, 960x540)." 10 50
+        return
+    fi
+    # Установка разрешения
+    echo "Разрешение экрана установлено на $RESOLUTION_86."
+    # Здесь можно сохранить значение в переменной или конфигурационном файле
+    }
             case $? in
                 1) continue ;;  # Игнорируем отмену
             esac
@@ -675,7 +693,7 @@ DXVK:             $DXVK_WOW \n\
                 RESOLUTION_86="854x480";;
                 12) 
                 RESOLUTION_86="960x540";;
-                13) 
+                13)  
                 RESOLUTION_86="1024x576";;
                 14) 
                 RESOLUTION_86="1024x768";;
@@ -706,8 +724,12 @@ DXVK:             $DXVK_WOW \n\
                 27) 
                 RESOLUTION_86="1920x1080";;
             esac
+
+            dialog --msgbox "Внимание \n\n
+Выберите разрешение $RESOLUTION_86 в Termux:x11 или WEG™:x11" 10 30
+
             sed -i "30s/.*/RESOLUTION_86=${RESOLUTION_86}/" "$CONFIG_x86";;
-                
+
         7.) 
             CORES_CHOICE=$(dialog --title "Выберите количество ядер" --menu " " 13 40 3 \
             "1" "с 1 по 7" \
@@ -778,9 +800,10 @@ DXVK:             $DXVK_WOW \n\
     ;;
 ###########################
 ########   WOW64  #########
+        
         2)
             while true; do
-            dynarec_choice=$(show_dialog "Настройки DYNAREC" " " 11 \
+                dynarec_choice=$(show_dialog "Настройки DYNAREC" " " 11 \
             "1" "DYNAREC_ALIGNED_ATOMICS= $ATOMICS_WOW" \
             "2" "BOX64_DYNAREC_BIGBLOCK= $BIGS64_WOW" \
             "3" "DYNAREC_FASTNAN= $FASTNAN_WOW" \
@@ -800,31 +823,31 @@ DXVK:             $DXVK_WOW \n\
                 1)
 # Переключение ALIGNED_ATOMICS
                 if [ "$ATOMICS_WOW" == "0" ]; then
-                    ATOMICS_WOW="1"
+                            ATOMICS_WOW="1"
                 elif [ "$ALIGNED_ATOMICS" == "1" ]; then
-                    ATOMICS_WOW="-"
+                            ATOMICS_WOW="-"
                 elif [ "$ATOMICS_WOW" == "-" ]; then
-                    ATOMICS_WOW="0"
+                            ATOMICS_WOW="0"
                 fi ;;
                 2)
 # Логика для BIGBLOCK_64
                 if [ "$BIGS64_WOW" == "0" ]; then
-                    BIGS64_WOW="1"
+                            BIGS64_WOW="1"
                 elif [ "$BIGS64_WOW" == "1" ]; then
-                    BIGBLOCK_64="2"
+                            BIGBLOCK_64="2"
                 elif [ "$BIGS64_WOW" == "2" ]; then
-                    BIGS64_WOW="-"
+                            BIGS64_WOW="-"
                 elif [ "$BIGS64_WOW" == "-" ]; then
-                    BIGS64_WOW="0"
+                            BIGS64_WOW="0"
                 fi ;;
                 3)
 # Переключение FASTNAN_WOW
                 if [ "$FASTNAN_WOW" == "0" ]; then
                     FASTNAN_WOW="1"
                 elif [ "$FASTNAN_WOW" == "1" ]; then
-                    FASTNAN_WOW="-"
+                            FASTNAN_WOW="-"
                 elif [ "$FASTNAN_WOW" == "-" ]; then
-                    FASTNAN_WOW="0"
+                            FASTNAN_WOW="0"
                 fi ;;
                 4)
 # Переключение SAFEFLAGS_WOW
@@ -840,15 +863,15 @@ DXVK:             $DXVK_WOW \n\
                 5)
 # Переключение STRONGMEM_WOW
                 if [ "$STRONGMEM_WOW" == "0" ]; then
-                    STRONGMEM_WOW="1"
+                            STRONGMEM_WOW="1"
                 elif [ "$STRONGMEM_WOW" == "1" ]; then
-                    STRONGMEM_WOW="2"
+                            STRONGMEM_WOW="2"
                 elif [ "$STRONGMEM_WOW" == "2" ]; then
-                    STRONGMEM_WOW="3"
+                            STRONGMEM_WOW="3"
                 elif [ "$STRONGMEM_WOW" == "3" ]; then
-                    STRONGMEM_WOW="-"
+                            STRONGMEM_WOW="-"
                 elif [ "$STRONGMEM_WOW" == "-" ]; then
-                    STRONGMEM_WOW="0"
+                            STRONGMEM_WOW="0"
                 fi ;;
                 6)
 # Переключение WAIT
@@ -1052,34 +1075,40 @@ DXVK:             $DXVK_WOW \n\
 # Аналогичные блоки для обновления других параметров...
 
         3)
-            TURNIP_CHOICE_64=$(dialog --title "Выберите Turnip" --menu " " 14 40 3 \
-                "1" "Turnip Zink v3" \
+            TURNIP_CHOICE=$(dialog --title "Выберите Turnip" --menu " " 16 40 3 \
+                "1" "Turnip Zink v2" \
                 "2" "Turnip Zinc v3.5" \
                 "3" "Turnip Zinc v4" \
-                "4" "VirGL Mesa 18.3.0" \
-                "5" "VirGL Mesa 19.1.8" \
-                "6" "VirGL Mesa 22.1.7" \
-                "7" "VirGL Mesa 24.0.0" 2>&1 >/dev/tty)
+                "4" "Turnip Zinc v5" \
+                "5" "Turnip Zinc v6.5" \
+                "6" "VirGL Mesa 18.3.0" \
+                "7" "VirGL Mesa 19.1.8" \
+                "8" "VirGL Mesa 22.1.7" \
+                "9" "VirGL Mesa 24.0.0" 2>&1 >/dev/tty)
 
             case $? in
                 1) continue ;;  # Игнорируем отмену
             esac
 
-            case $TURNIP_CHOICE_64 in
+            case $TURNIP_CHOICE in
                 1) 
-                TURNIP_WOW="-v3";;
+               TURNIP_WOW="-zink-v2" ;;
                 2) 
-                TURNIP_WOW="-v3.5";;
+                TURNIP_WOW="-zink-v3.5";;
                 3) 
-                TURNIP_WOW="-v4";;
+                TURNIP_WOW="-zink-v4";;
                 4) 
-                TURNIP_WOW="-virgl-mesa-18";;
+                TURNIP_WOW="-zink-v5";;
                 5) 
-                TURNIP_WOW="-virgl-mesa-19";;
+                TURNIP_WOW="-zink-v6.5";;
                 6) 
-                TURNIP_WOW="-virgl-mesa-22";;
+               TURNIP_WOW="-virgl_mesa-18.3.0";;
                 7) 
-                TURNIP_WOW="-virgl-mesa-24";;
+                TURNIP_WOW="-virgl_mesa-19.1.8";;
+                8) 
+               TURNIP_WOW="-virgl_mesa-22.1.7";;
+                9) 
+               TURNIP_WOW="-virgl_mesa-24.0.0";;
             esac
 # Запись в 43 строчку файла $CONFIG
             sed -i "22s/.*/TURNIP_WOW=${TURNIP_WOW}/" "$CONFIG_x64";;
@@ -1209,7 +1238,26 @@ DXVK:             $DXVK_WOW \n\
             "25" "1680x1050   (16:10)" \
             "26" "1920x1080   (16:9)" \
             "27" "1920x1200   (16:10)"  2>&1 >/dev/tty)
+            
+    set_resolution_WOW() {
+    # Запрос разрешения экрана у пользователя
+    $RESOLUTION_WOW=$(dialog --inputbox "Введите разрешение экрана (например, 960x540):" 8 40 2>&1 >/dev/tty)
 
+    # Проверка нажатия кнопки "Отмена"
+    if [ $? -ne 0 ]; then
+        echo "Вы отменили выбор разрешения."
+        return
+    fi
+    # Проверка формата разрешения
+    if [[ ! "$RESOLUTION_WOW" =~ ^[0-9]+x[0-9]+$ ]]; then
+        dialog --msgbox "Неверный формат разрешения. Пожалуйста, введите в формате WIDTHxHEIGHT (например, 960x540)." 10 50
+        return
+    fi
+    # Установка разрешения
+    echo "Разрешение экрана установлено на $RESOLUTION_WOW."
+    # Здесь можно сохранить значение в переменной или конфигурационном файле
+    }
+    
             case $? in
                 1) continue ;;  # Игнорируем отмену
             esac
@@ -1270,8 +1318,12 @@ DXVK:             $DXVK_WOW \n\
                 27) 
                 RESOLUTION_WOW="1920x1080";;
             esac
+            
+            dialog --msgbox "Внимание \n\n
+Выберите разрешение $RESOLUTION_WOW в Termux:x11 или WEG™:x11" 10 30
+
             sed -i "25s/.*/RESOLUTION_WOW=${RESOLUTION_WOW}/" "$CONFIG_x64";;
-                
+
         7) 
             CORES_CHOICE_64=$(dialog --title "Выберите количество ядер" --menu " " 13 40 3 \
             "1" "с 1 по 7" \
