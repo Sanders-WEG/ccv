@@ -778,10 +778,9 @@ DXVK:             $DXVK_WOW \n\
     ;;
 ###########################
 ########   WOW64  #########
-        
         2)
             while true; do
-                dynarec_choice=$(show_dialog "Настройки DYNAREC" " " 11 \
+            dynarec_choice=$(show_dialog "Настройки DYNAREC" " " 11 \
             "1" "DYNAREC_ALIGNED_ATOMICS= $ATOMICS_WOW" \
             "2" "BOX64_DYNAREC_BIGBLOCK= $BIGS64_WOW" \
             "3" "DYNAREC_FASTNAN= $FASTNAN_WOW" \
